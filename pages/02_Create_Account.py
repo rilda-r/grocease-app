@@ -38,6 +38,9 @@ check_session_timeout()
 if "reg_password" not in st.session_state:
     st.session_state.reg_password = ""
 
+if "creating_account" not in st.session_state:
+    st.session_state.creating_account = False
+
 st.markdown(
     """
     <h2 style="text-align:center; margin-bottom:0.2rem;">Create your GrocEase account</h2>
@@ -60,7 +63,7 @@ with mid:
         unsafe_allow_html=True,
     )
 
-    # Standardized Password and Confirm Password fields (redundant dual-eye buttons removed)
+    # Standardized Password and Confirm Password fields
     show_passwords = st.checkbox("Show passwords", key="reg_show_passwords")
     pw_type = "default" if show_passwords else "password"
 
@@ -103,14 +106,51 @@ with mid:
                 )
 
     st.write("")
-    create_clicked = st.button("Create Account", type="primary", use_container_width=True)
+    is_submitting = st.session_state.get("creating_account", False)
+    button_label = "⏳ Creating Account..." if is_submitting else "Create Account"
+    create_clicked = st.button(
+        button_label,
+        type="primary",
+        use_container_width=True,
+        disabled=is_submitting,
+        key="reg_create_account_btn",
+    )
+
+    # Instant client-side click-lock to disable button physically on first tap
+    st.components.v1.html(
+        """
+        <script>
+        (function() {
+            const parentDoc = window.parent.document;
+            const btn = parentDoc.querySelector('button[kind="primary"]') || 
+                        Array.from(parentDoc.querySelectorAll('button')).find(b => b.innerText && b.innerText.includes('Create Account'));
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    setTimeout(function() {
+                        btn.disabled = true;
+                        btn.style.pointerEvents = 'none';
+                        btn.style.opacity = '0.65';
+                        btn.style.cursor = 'not-allowed';
+                        const pTag = btn.querySelector('p') || btn;
+                        pTag.innerText = '⏳ Creating Account...';
+                    }, 10);
+                });
+            }
+        })();
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
+
     st.markdown("<p style='text-align:center; margin-top:1rem; font-size:0.92rem; color:#10272A; font-weight:500;'>Already have an account?</p>", unsafe_allow_html=True)
     st.markdown('<div style="text-align:center;">', unsafe_allow_html=True)
     st.page_link("pages/01_Login.py", label="Login to your account")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---- ACTIONS LOGIC PROCESSING ----
-if create_clicked:
+if create_clicked and not is_submitting:
+    st.session_state.creating_account = True
     errors = []
     clean_email = clean_email_input(email)
     
@@ -132,24 +172,28 @@ if create_clicked:
         errors.append("An account with this email already exists. Please log in instead.")
 
     if errors:
+        st.session_state.creating_account = False
         for e in errors:
             st.error(e)
     else:
-        hashed = hash_password(password)
-        if existing and not existing.get("is_verified"):
-            update_unverified_user(full_name, clean_email, hashed)
-            created = True
-        else:
-            created = create_user(full_name, clean_email, hashed)
+        with st.spinner("Setting up your account and sending verification code..."):
+            hashed = hash_password(password)
+            if existing and not existing.get("is_verified"):
+                update_unverified_user(full_name, clean_email, hashed)
+                created = True
+            else:
+                created = create_user(full_name, clean_email, hashed)
 
-        if not created:
-            st.error("An account with this email already exists.")
-        else:
-            otp = generate_otp()
-            expiry = otp_expiry_time()
-            set_otp(clean_email, otp, expiry.isoformat())
-            send_otp_email(clean_email, otp)
+            if not created:
+                st.session_state.creating_account = False
+                st.error("An account with this email already exists.")
+            else:
+                otp = generate_otp()
+                expiry = otp_expiry_time()
+                set_otp(clean_email, otp, expiry.isoformat())
+                send_otp_email(clean_email, otp)
 
-            st.session_state.pending_verification_email = clean_email
-            st.session_state.dev_otp_preview = otp  
-            st.switch_page("pages/03_Verify_Email.py")
+                st.session_state.pending_verification_email = clean_email
+                st.session_state.dev_otp_preview = otp
+                st.session_state.creating_account = False
+                st.switch_page("pages/03_Verify_Email.py")
