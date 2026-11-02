@@ -231,20 +231,6 @@ if step == 2:
     
     if not scan.get("ocr_success"):
         st.error(f"⚠️ {scan.get('ocr_error') or 'Text extraction failed. Please enter the items manually below.'}")
-    else:
-        engine = scan.get("engine")
-        engine_label = {
-            "gemini": "Gemini Structured Vision",
-            "pdf_text": "PDF Text Layer (Gemini unavailable)",
-            "tesseract_fallback": "Tesseract Fallback (Gemini unavailable)",
-        }.get(engine, "Fallback Engine")
-        if engine == "gemini":
-            st.success(f"✅ Extracted with **{engine_label}**! Please verify quantities and prices.")
-        else:
-            st.warning(f"⚠️ Extracted with **{engine_label}**. Please review carefully.")
-    if scan.get("gemini_error"):
-        with st.expander("Gemini error details"):
-            st.code(str(scan["gemini_error"]))
 
     # Receipt Metadata Header
     m_col1, m_col2, m_col3 = st.columns(3)
