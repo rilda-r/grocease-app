@@ -58,8 +58,6 @@ WARM_SHADOW_MD = "0 8px 30px -4px rgba(16, 39, 42, 0.12)"
 
 BASE_CSS = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-
 html, body, [class*="css"], .stApp {{
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     color: {DEEP_CHOCOLATE} !important;
@@ -675,6 +673,9 @@ def hide_sidebar():
 
 def apply_base_style():
     pwa_head = (
+        '<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">\n'
         '<link rel="manifest" href="/app/static/manifest.json">\n'
         '<meta name="theme-color" content="#0F766E">\n'
         '<meta name="mobile-web-app-capable" content="yes">\n'

@@ -9,11 +9,14 @@ so they never reach callers of the service layer.
 
 import logging
 import os
+import threading
 from contextlib import contextmanager
 from pathlib import Path
 
 import psycopg2
+import psycopg2.extensions
 from psycopg2.extras import RealDictCursor
+from psycopg2.pool import ThreadedConnectionPool
 
 from config.settings import get_settings
 
@@ -22,6 +25,9 @@ logger = logging.getLogger("grocease.db")
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 PG_UNIQUE_VIOLATION = "23505"
 ER_DUP_ENTRY = 1062
+
+_POOL = None
+_POOL_LOCK = threading.Lock()
 
 
 class DatabaseError(Exception):
@@ -64,20 +70,90 @@ def _connect():
     return psycopg2.connect(**params)
 
 
+def _get_pool():
+    """Lazily initialize and return a persistent thread-safe connection pool."""
+    global _POOL
+    if _POOL is not None and not _POOL.closed:
+        return _POOL
+    with _POOL_LOCK:
+        if _POOL is not None and not _POOL.closed:
+            return _POOL
+        cfg = get_settings()
+        try:
+            if cfg.db_url:
+                _POOL = ThreadedConnectionPool(
+                    minconn=1,
+                    maxconn=10,
+                    dsn=cfg.db_url,
+                    cursor_factory=RealDictCursor,
+                )
+            else:
+                params = dict(
+                    host=cfg.db_host,
+                    port=cfg.db_port,
+                    user=cfg.db_user,
+                    password=cfg.db_password,
+                    dbname=cfg.db_name,
+                    connect_timeout=10,
+                    cursor_factory=RealDictCursor,
+                )
+                sslmode = os.environ.get("GROCEASE_DB_SSLMODE") or cfg.db_sslmode
+                if sslmode:
+                    params["sslmode"] = sslmode
+                elif cfg.db_host not in ("localhost", "127.0.0.1", ""):
+                    params["sslmode"] = "require"
+                _POOL = ThreadedConnectionPool(minconn=1, maxconn=10, **params)
+        except Exception as exc:
+            logger.warning(f"Could not initialize connection pool, falling back to direct connect: {exc}")
+            _POOL = None
+        return _POOL
+
+
 @contextmanager
 def get_connection(with_database: bool = True):
+    pool = None
+    conn = None
+    is_pooled = False
+
     try:
-        conn = _connect()
-    except psycopg2.Error as err:
-        pgcode = getattr(err, "pgcode", None)
-        raise DatabaseError("Unable to connect to database: " + str(err), pgcode=pgcode) from err
+        pool = _get_pool()
+        if pool:
+            conn = pool.getconn()
+            is_pooled = True
+            if getattr(conn, "closed", 0) != 0:
+                pool.putconn(conn, close=True)
+                conn = _connect()
+                is_pooled = False
+    except Exception:
+        pool = None
+        is_pooled = False
+
+    if conn is None:
+        try:
+            conn = _connect()
+            is_pooled = False
+        except psycopg2.Error as err:
+            pgcode = getattr(err, "pgcode", None)
+            raise DatabaseError("Unable to connect to database: " + str(err), pgcode=pgcode) from err
+
     try:
         yield conn
     finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+        if is_pooled and pool and conn:
+            try:
+                if conn.status == psycopg2.extensions.STATUS_IN_TRANSACTION:
+                    conn.rollback()
+                pool.putconn(conn)
+            except Exception:
+                try:
+                    pool.putconn(conn, close=True)
+                except Exception:
+                    pass
+        elif conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 @contextmanager
@@ -89,11 +165,17 @@ def get_cursor():
             yield cursor
             conn.commit()
         except psycopg2.Error as err:
-            conn.rollback()
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             pgcode = getattr(err, "pgcode", None)
             raise DatabaseError(str(err), pgcode=pgcode) from err
         except Exception:
-            conn.rollback()
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             raise
         finally:
             try:

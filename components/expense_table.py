@@ -9,7 +9,7 @@ import streamlit as st
 from utils.formatting import format_currency, format_date, badge_html
 
 
-def render_expense_table(expenses: list, on_delete=None):
+def render_expense_table(expenses: list, on_delete=None, **kwargs):
     """
     Render personal expenses in a clean, single-line card layout.
     """

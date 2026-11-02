@@ -334,12 +334,29 @@ def delete_user_account(user_identifier):
     return True
 
 
-def get_user_joined_rooms(user_id: int) -> list:
-    """Retrieve all rooms the user has joined from the database."""
+_ROOMS_CACHE = {}
+_ROOMS_CACHE_TTL = 8.0
+
+
+def invalidate_rooms_cache(user_id: int = None):
+    """Invalidate cached room queries for a user or all users."""
+    if user_id:
+        _ROOMS_CACHE.pop(user_id, None)
+    else:
+        _ROOMS_CACHE.clear()
+
+
+def get_user_joined_rooms(user_id: int, force_refresh: bool = False) -> list:
+    """Retrieve all rooms the user has joined from the database (cached for 8s to prevent duplicate queries on a single render)."""
     if not user_id:
         return []
+    now = time.time()
+    if not force_refresh and user_id in _ROOMS_CACHE:
+        cached_time, cached_rooms = _ROOMS_CACHE[user_id]
+        if now - cached_time < _ROOMS_CACHE_TTL:
+            return cached_rooms
     try:
-        return query_all(
+        rooms = query_all(
             """
             SELECT r.id, r.name, r.secret_code, m.role, r.created_at
             FROM rooms r
@@ -349,6 +366,8 @@ def get_user_joined_rooms(user_id: int) -> list:
             """,
             (int(user_id),),
         )
+        _ROOMS_CACHE[user_id] = (now, rooms)
+        return rooms
     except Exception:
         return []
 

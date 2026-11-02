@@ -237,6 +237,11 @@ def render_room_selector(key_prefix: str = "global", show_refresh: bool = True):
             )
         with col_ref:
             if st.button("🔄 Refresh", key=f"{key_prefix}_top_refresh_btn", help="Refresh latest room data", use_container_width=True):
+                try:
+                    from database.database import invalidate_rooms_cache
+                    invalidate_rooms_cache(user_id)
+                except Exception:
+                    pass
                 st.toast("Data refreshed! ✨", icon="🔄")
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -292,6 +297,11 @@ def render_sidebar():
         st.markdown('<div class="sb-section-label">Actions</div>', unsafe_allow_html=True)
         st.markdown('<div class="sb-refresh-wrapper">', unsafe_allow_html=True)
         if st.button("🔄  Refresh", key="sb_sync_btn", use_container_width=True, help="Fetch latest updates"):
+            try:
+                from database.database import invalidate_rooms_cache
+                invalidate_rooms_cache()
+            except Exception:
+                pass
             st.toast("Data refreshed! ✨", icon="🔄")
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
