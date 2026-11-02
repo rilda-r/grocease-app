@@ -656,7 +656,12 @@ elif step == 4:
     th6.markdown("<span style='font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9A6A12;'>Owed to Shopper</span>", unsafe_allow_html=True)
     st.markdown("<hr style='margin:0.3rem 0 0.8rem 0; border:none; border-top:1.5px solid #CADDD8;'>", unsafe_allow_html=True)
 
-    for m in summaries:
+    # Only display members who are involved in this receipt (shopper or assigned items/debt)
+    active_summaries = [
+        m for m in summaries
+        if m["is_shopper"] or m.get("owed_to_shopper", 0) > 0 or m.get("items_count", 0) > 0
+    ]
+    for m in active_summaries:
         r1, r2, r3, r4, r5, r6 = st.columns([2.5, 1.5, 1.5, 1.5, 2, 2.5])
         with r1:
             name_label = f"👤 {m['display_name']}" + (" *(Shopper)*" if m['is_shopper'] else "")

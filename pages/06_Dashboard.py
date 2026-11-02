@@ -17,6 +17,7 @@ from collections import defaultdict
 from style import apply_base_style, render_dev_mode_banner
 from utils.session import require_auth, get_current_user_id, get_username
 from utils.formatting import format_currency
+from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar
 from components.notifications import render_notification_banner
 from components.cards import render_metric_card, render_metric_cards_grid, render_info_card, render_empty_state
@@ -61,6 +62,9 @@ with col_dash_ref:
         st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("<hr style='border-color:#CADDD8; margin:0.5rem 0 1.5rem 0;'>", unsafe_allow_html=True)
+
+# ── Real-time Auto-Sync ────────────────────────────────────────────────────────
+setup_auto_sync(interval_ms=5000, key="dash_auto_sync")
 
 # ── Notifications (e.g. payment reminders) ────────────────────────────────────
 render_notification_banner(user_id, key_prefix="dashboard")

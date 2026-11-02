@@ -15,6 +15,7 @@ import streamlit as st
 from style import apply_base_style
 from utils.session import require_auth, get_current_user_id, get_current_room_id, get_current_room_name
 from utils.formatting import badge_html, safe_error_message
+from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar, render_room_selector
 from components.cards import render_empty_state
 from components.alerts import permission_error
@@ -68,12 +69,19 @@ if not room_id:
         st.switch_page("pages/07_Rooms.py")
     st.stop()
 
+# ── Real-time Auto-Sync across all roommates ─────────────────────────────────
+setup_auto_sync(
+    interval_ms=3500,
+    key="gl_auto_sync",
+    pause=bool(st.session_state.get("edit_item_id") or st.session_state.get("duplicate_confirm")),
+)
+
 # Room sub-header with live status indicator
 st.markdown(
     f"<p style='color:#4A6568; margin-top:-0.5rem;'>"
     f"Viewing items in: <strong>{room_name}</strong> &nbsp;"
     f"<span style='background:#EAF1EB; color:#6B8F71; border:1px solid #6B8F71; padding:2px 8px; border-radius:12px; font-size:0.76rem; font-weight:700;'>"
-    f"🟢 Live</span></p>",
+    f"🟢 Live Auto-Sync</span></p>",
     unsafe_allow_html=True,
 )
 

@@ -15,6 +15,7 @@ import streamlit as st
 from style import apply_base_style
 from utils.session import require_auth, get_current_user_id, get_current_room_id, get_current_room_name
 from utils.formatting import badge_html, safe_error_message
+from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar, render_room_selector
 from components.cards import render_empty_state
 from database.database import (
@@ -58,6 +59,9 @@ if not room_id:
         st.switch_page("pages/07_Rooms.py")
     st.stop()
 
+# ── Real-time Auto-Sync across all roommates ─────────────────────────────────
+setup_auto_sync(interval_ms=3000, key="shop_auto_sync")
+
 # ── Shopping Room Frame ────────────────────────────────────────────────────────
 st.markdown(
     f"""
@@ -65,7 +69,7 @@ st.markdown(
         <span style="color:#4A6568; font-size:0.95rem;">Shopping in: <strong style="color:#10272A;">{room_name}</strong></span>
         <span style="background:#EAF1EB; color:#2E5135; border:1px solid #6B8F71; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:6px;">
             <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#6B8F71;"></span>
-            Live
+            Live Auto-Sync
         </span>
     </div>
     """,

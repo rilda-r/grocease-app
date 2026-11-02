@@ -16,6 +16,7 @@ import streamlit as st
 from style import apply_base_style
 from utils.session import require_auth, get_current_user_id, get_current_room_id, get_current_room_name
 from utils.formatting import format_currency, format_datetime, badge_html, safe_error_message
+from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar, render_room_selector
 from components.cards import render_metric_card, render_empty_state
 from components.payment_table import render_payment_table
@@ -107,6 +108,9 @@ if not room_id:
     render_empty_state("🏠", "No room selected", "Please select a room from the dropdown above to view and settle payments.")
     st.stop()
 
+# ── Real-time Auto-Sync ────────────────────────────────────────────────────────
+setup_auto_sync(interval_ms=4000, key="pay_auto_sync")
+
 st.markdown(
     f"""
     <div style="background:#F7FBFA; border:1px solid #CADDD8; border-radius:14px; padding:0.6rem 1rem; margin-bottom:1.2rem;">
@@ -140,7 +144,10 @@ if split_bill_id:
         with split_tab:
             assigned_split = calculate_bill_split(split_bill_id)
             if assigned_split:
+                is_shopper = int(bill.get('userId') or bill.get('user_id') or 0) == int(user_id)
                 for uid, amt in assigned_split.items():
+                    if not (is_shopper or int(uid) == int(user_id)):
+                        continue
                     st.markdown(
                         f"""
                         <div style="display:flex; justify-content:space-between;
@@ -185,8 +192,8 @@ if split_bill_id:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Payment summaries ─────────────────────────────────────────────────────────
-payments = get_payments(room_id)
+# ── Payment summaries & Strict User Privacy ───────────────────────────────────
+all_room_payments = get_payments(room_id)
 
 def _is_payer(p, uid):
     payer = p.get("payerUserId") if p.get("payerUserId") is not None else p.get("payer_user_id")
@@ -198,6 +205,14 @@ def _is_payee(p, uid):
 
 def _is_pending(p):
     return (p.get("paymentStatus") or p.get("payment_status")) == "pending"
+
+# STRICT ROOM PRIVACY:
+# A user must ONLY see debts and payments where they are the payer OR payee.
+# Debts between other roommates in the same room are strictly filtered out.
+payments = [
+    p for p in all_room_payments
+    if _is_payer(p, user_id) or _is_payee(p, user_id)
+]
 
 amount_owe = sum(
     float(p.get("amount", 0.0)) for p in payments
