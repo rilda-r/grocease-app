@@ -17,6 +17,7 @@ from utils.session import require_auth, get_current_user_id, get_current_room_id
 from utils.formatting import badge_html, safe_error_message
 from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar, render_room_selector
+from components.help_guide import render_help_button
 from components.cards import render_empty_state
 from components.alerts import permission_error
 from components.grocery_table import render_grocery_table
@@ -40,16 +41,30 @@ st.set_page_config(
     page_title="Grocery List — GrocEase",
     page_icon="🛒",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 apply_base_style()
 require_auth()
 render_sidebar()
 
-col_title, col_sel = st.columns([1.6, 1], gap="medium")
+col_title, col_help, col_sel = st.columns([1.5, 0.35, 1.15], gap="small", vertical_alignment="center")
 with col_title:
     st.markdown("# 🛒 Grocery List")
+with col_help:
+    render_help_button(
+        page_title="Grocery List",
+        tip="Plan and organize household items to buy before going shopping.",
+        items=[
+            ("➕ Add Item", "Add a new grocery item with quantity, units, priority, and category."),
+            ("✏️ Edit", "Update an item's quantity or details right in place."),
+            ("🗑️ Delete", "Remove an item from this room's grocery list."),
+            ("🏠 Active Room", "Switch between your shared grocery groups."),
+            ("🧺 Go to Shopping", "Switch to live in-store mode to check items off into your cart."),
+            ("🔄 Sync", "Syncs live additions and edits made by other roommates immediately."),
+        ],
+        key="grocery_list",
+    )
 with col_sel:
     st.write("")
     render_room_selector(key_prefix="grocery_page")

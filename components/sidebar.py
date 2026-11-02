@@ -261,6 +261,27 @@ def render_sidebar():
 
         # ── Minimalist Actions ────────────────────────
         st.markdown('<div class="sb-section-label">Actions</div>', unsafe_allow_html=True)
+        with st.popover("❓  Navigation Help", use_container_width=True):
+            st.markdown(
+                """
+                <div style="font-size:0.85rem; color:#10272A; line-height:1.45;">
+                    <div style="font-family:'Fraunces',Georgia,serif; font-size:1.05rem; font-weight:700; color:#0F766E; margin-bottom:0.4rem;">
+                        🧭 GrocEase Guide
+                    </div>
+                    <div style="margin-bottom:0.35rem;">• <strong>📊 Dashboard:</strong> Overview of pending groceries, room budgets, and net debts.</div>
+                    <div style="margin-bottom:0.35rem;">• <strong>🏠 Rooms:</strong> Create or join shared grocery groups using a 6-character code.</div>
+                    <div style="margin-bottom:0.35rem;">• <strong>🛒 Grocery List:</strong> Add items, set priorities, and see live edits from roommates.</div>
+                    <div style="margin-bottom:0.35rem;">• <strong>🧺 Shopping Mode:</strong> Tick off items live in the store aisle as you buy them.</div>
+                    <div style="margin-bottom:0.35rem;">• <strong>📷 Bill Scanning:</strong> Scan receipt photo/PDF with AI, match items, and split debts.</div>
+                    <div style="margin-bottom:0.35rem;">• <strong>💳 Payments:</strong> Settle debts with two-way confirmation and reminder nudges.</div>
+                    <div style="margin-bottom:0.35rem;">• <strong>🎯 Budget:</strong> Set monthly category limits and track household spending bars.</div>
+                    <div style="margin-bottom:0.35rem;">• <strong>📝 Personal Expenses:</strong> Log private individual purchases not shared with roommates.</div>
+                    <div style="margin-bottom:0.35rem;">• <strong>👤 Profile:</strong> Update legal name, display nickname, and payment details.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
         if st.button("🔄  Sync & Refresh", key="sb_sync_btn", use_container_width=True, help="Fetch latest updates"):
             st.toast("Data synchronized! ✨", icon="🔄")
             st.rerun()

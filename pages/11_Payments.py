@@ -18,6 +18,7 @@ from utils.session import require_auth, get_current_user_id, get_current_room_id
 from utils.formatting import format_currency, format_datetime, badge_html, safe_error_message
 from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar, render_room_selector
+from components.help_guide import render_help_button
 from components.cards import render_metric_card, render_empty_state
 from components.payment_table import render_payment_table
 from components.notifications import render_notification_banner
@@ -91,7 +92,7 @@ st.set_page_config(
     page_title="Payments — GrocEase",
     page_icon="💳",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 apply_base_style()
@@ -99,9 +100,23 @@ require_auth()
 render_sidebar()
 
 # ── Select Room Component at top ──────────────────────────────────────────────
-col_title, col_sel = st.columns([1.6, 1], gap="medium")
+col_title, col_help, col_sel = st.columns([1.5, 0.35, 1.15], gap="small", vertical_alignment="center")
 with col_title:
     st.markdown("# 💳 Payments")
+with col_help:
+    render_help_button(
+        page_title="Payments & Debts",
+        tip="Track household balances and settle debts with two-way confirmation.",
+        items=[
+            ("💸 Settle", "Payer records money transferred; sets status to Awaiting Confirm and notifies payee."),
+            ("✅ Confirm", "Payee verifies money received in their UPI/bank; officially marks debt Settled."),
+            ("🔔 Remind", "Payee sends a gentle in-app reminder alert to the payer."),
+            ("You Owe Tab", "Shows debts where you are the payer and need to settle up."),
+            ("Owed to You Tab", "Shows debts where roommates owe you money."),
+            ("Room Balance & History", "Shows net room balances and completed audit trail."),
+        ],
+        key="payments",
+    )
 with col_sel:
     st.write("")
     render_room_selector(key_prefix="payments_page")

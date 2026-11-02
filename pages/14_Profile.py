@@ -16,6 +16,7 @@ import streamlit as st
 from style import apply_base_style
 from utils.session import require_auth, get_current_user_id, get_username, logout_user
 from components.sidebar import render_sidebar
+from components.help_guide import render_help_button
 from components.cards import render_metric_card
 from database.database import (
     get_profile,
@@ -31,7 +32,7 @@ st.set_page_config(
     page_title="Profile — GrocEase",
     page_icon="👤",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 apply_base_style()
@@ -46,7 +47,22 @@ actual_name = profile.get("actual_name") or user_db.get("full_name") or "User"
 nickname = profile.get("nickname") or user_db.get("nickname") or get_username()
 email = user_db.get("email") or st.session_state.get("user_email", "")
 
-st.markdown("# 👤 My Profile")
+st.markdown('<div class="groc-page-header">', unsafe_allow_html=True)
+col_prof_title, col_prof_help = st.columns([5.2, 0.8], vertical_alignment="center")
+with col_prof_title:
+    st.markdown("# 👤 My Profile")
+with col_prof_help:
+    render_help_button(
+        page_title="Profile & Settings",
+        tip="Manage your account identity, display names, and payment handles visible to roommates.",
+        items=[
+            ("💾 Save Changes", "Updates your legal name, display nickname, and UPI ID for room reimbursements."),
+            ("🔑 Change Password", "Secures your GrocEase account with a fresh password."),
+            ("🚪 Logout", "Logs out securely from this device."),
+        ],
+        key="profile",
+    )
+st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("<hr style='border-color:#CADDD8; margin:0.5rem 0 1.5rem 0;'>", unsafe_allow_html=True)
 
 # ── Profile layout ────────────────────────────────────────────────────────────

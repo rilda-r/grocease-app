@@ -19,6 +19,7 @@ from utils.session import require_auth, get_current_user_id, get_username
 from utils.formatting import format_currency
 from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar
+from components.help_guide import render_help_button
 from components.notifications import render_notification_banner
 from components.cards import render_metric_card, render_metric_cards_grid, render_info_card, render_empty_state
 from components.charts import render_category_pie_chart, render_budget_utilization_chart
@@ -37,7 +38,7 @@ st.set_page_config(
     page_title="Dashboard — GrocEase",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 apply_base_style()
@@ -52,10 +53,22 @@ render_dev_mode_banner()
 
 # ── Page title & Top Refresh ──────────────────────────────────────────────────
 st.markdown('<div class="groc-page-header">', unsafe_allow_html=True)
-col_dash_title, col_dash_ref = st.columns([4.2, 1.2], vertical_alignment="center")
+col_dash_title, col_dash_help, col_dash_ref = st.columns([3.8, 0.6, 1.1], vertical_alignment="center")
 with col_dash_title:
     st.markdown("# 📊 Dashboard")
     st.markdown(f"<p style='color:#4A6568; margin-top:-0.8rem;'>Welcome back, <strong>{username}</strong>!</p>", unsafe_allow_html=True)
+with col_dash_help:
+    render_help_button(
+        page_title="Dashboard",
+        tip="Your household command center: monitor pending groceries, room budgets, and debts at a glance.",
+        items=[
+            ("🔄 Sync", "Refreshes live spending metrics, debts, and grocery counters immediately."),
+            ("📊 Metric Cards", "Tap on pending groceries or debts to jump straight to their respective pages."),
+            ("📋 Quick Action Cards", "Instant shortcuts to create rooms, manage grocery lists, or scan receipts."),
+            ("☰ Sidebar Menu", "Tap the top-left menu icon to navigate between all pages of the app."),
+        ],
+        key="dash",
+    )
 with col_dash_ref:
     if st.button("🔄 Sync", key="dash_top_sync_btn", help="Sync latest dashboard metrics", use_container_width=True):
         st.toast("Dashboard refreshed! ✨", icon="🔄")

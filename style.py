@@ -508,13 +508,15 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-
 
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
-.groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
+.groc-room-sel-row div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
+.groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
     min-width: 0 !important;
 }}
 
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
-.groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child {{
+.groc-room-sel-row div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
+.groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child {{
     flex: 1 1 auto !important;
     width: auto !important;
     min-width: 0 !important;
@@ -522,7 +524,8 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-
 
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
-.groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child) {{
+.groc-room-sel-row div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
+.groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child) {{
     flex: 0 0 auto !important;
     width: auto !important;
     min-width: 0 !important;
@@ -549,6 +552,54 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) .stButton
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+}}
+
+/* Help Popover Button Styling */
+[data-testid="stPopover"] > button {{
+    background-color: #F7FBFA !important;
+    color: #0F766E !important;
+    border: 1.5px solid #CADDD8 !important;
+    border-radius: 10px !important;
+    padding: 0.28rem 0.6rem !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    min-height: 2.15rem !important;
+    height: 2.15rem !important;
+    box-shadow: 0 2px 6px rgba(16, 39, 42, 0.05) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.15s ease-in-out !important;
+}}
+[data-testid="stPopover"] > button:hover {{
+    background-color: #E6F4F1 !important;
+    border-color: #0F766E !important;
+    color: #0F766E !important;
+    transform: translateY(-1px) !important;
+}}
+
+/* Sidebar Popover Button Styling */
+[data-testid="stSidebar"] [data-testid="stPopover"] > button {{
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(227, 214, 190, 0.22) !important;
+    border-radius: 12px !important;
+    color: #F7FBFA !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    padding: 0.48rem 0.85rem !important;
+    text-align: center !important;
+    margin-top: 0.3rem !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    min-height: 2.3rem !important;
+    transition: all 0.2s ease !important;
+}}
+[data-testid="stSidebar"] [data-testid="stPopover"] > button:hover {{
+    background-color: #0F766E !important;
+    border-color: #0F766E !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3) !important;
+    transform: translateY(-1px) !important;
 }}
 
 /* Mobile responsive enhancements */
@@ -584,14 +635,16 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) .stButton
     }}
     div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
     div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
-    .groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child {{
+    .groc-room-sel-row div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
+    .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child {{
         flex: 1 1 auto !important;
         width: auto !important;
         min-width: 0 !important;
     }}
     div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
     div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
-    .groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child) {{
+    .groc-room-sel-row div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
+    .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child) {{
         flex: 0 0 auto !important;
         width: auto !important;
         min-width: 0 !important;

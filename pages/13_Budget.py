@@ -18,6 +18,7 @@ from style import apply_base_style
 from utils.session import require_auth, get_current_user_id
 from utils.formatting import format_currency
 from components.sidebar import render_sidebar
+from components.help_guide import render_help_button
 from components.cards import render_empty_state
 from components.budget_progress import render_budget_progress
 from components.forms import render_add_budget_form
@@ -45,7 +46,7 @@ st.set_page_config(
     page_title="Budget — GrocEase",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 apply_base_style()
@@ -55,10 +56,23 @@ render_sidebar()
 user_id = get_current_user_id()
 
 st.markdown('<div class="groc-page-header">', unsafe_allow_html=True)
-col_bgt_title, col_bgt_ref = st.columns([4.2, 1.2], vertical_alignment="center")
+col_bgt_title, col_bgt_help, col_bgt_ref = st.columns([3.8, 0.6, 1.1], vertical_alignment="center")
 with col_bgt_title:
     st.markdown("# 🎯 Budget Manager")
     st.markdown("<p style='color:#4A6568; margin-top:-0.8rem;'>Set monthly category limits, monitor active utilization, and inspect visual month-end analytics on a single screen.</p>", unsafe_allow_html=True)
+with col_bgt_help:
+    render_help_button(
+        page_title="Budget Manager",
+        tip="Set spending limits for categories and track your real-time spend with alerts.",
+        items=[
+            ("🎯 Set Budget", "Define monthly spending thresholds for groceries, dining, utilities, etc."),
+            ("✏️ Edit Limit", "Change the spending cap for an existing budget category."),
+            ("🗑️ Delete", "Remove a budget category target."),
+            ("📊 Charts", "Inspect real-time utilization progress bars and monthly spending breakdown."),
+            ("🔄 Sync", "Recalculates budget spent percentages with the latest receipts and expenses."),
+        ],
+        key="budget",
+    )
 with col_bgt_ref:
     if st.button("🔄 Sync", key="bgt_top_sync_btn", help="Sync latest budget data", use_container_width=True):
         st.toast("Budget data refreshed! ✨", icon="🔄")
