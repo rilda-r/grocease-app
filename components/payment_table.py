@@ -1,0 +1,66 @@
+"""
+components/payment_table.py
+===========================
+Payment records table component.
+Shared Kitchen Counter aesthetic design.
+"""
+
+import streamlit as st
+from utils.formatting import format_currency, format_datetime, badge_html
+from mock.mock_data import get_username
+
+
+def render_payment_table(payments: list, current_user_id: int, on_settle=None, on_report=None, key_prefix: str = ""):
+    """
+    Render payment records.
+
+    Args:
+        payments: list of Payment dicts
+        current_user_id: logged-in user id
+        on_settle: callback(payment_id)
+        on_report: callback(payment_id)
+        key_prefix: unique prefix for widget keys
+    """
+    if not payments:
+        st.markdown(
+            """
+            <div style="background:#FFFFFF; border:1.5px dashed #CADDD8; border-radius:18px;
+                        text-align:center; padding:2.5rem 1rem; color:#4A6568; box-shadow:0 2px 8px rgba(16,39,42,0.03);">
+                <div style="font-size:2.8rem; margin-bottom:0.4rem;">💳</div>
+                <div style="font-family:'Fraunces',Georgia,serif; font-size:1.1rem; font-weight:700; color:#10272A;">No payments yet</div>
+                <div style="font-size:0.88rem; color:#4A6568; margin-top:0.3rem;">Payments appear after a bill is split in your rooms.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return
+
+    headers = ["Payer", "Payee", "Amount", "Status", "Date", "Actions"]
+    header_cols = st.columns([2, 2, 2, 2, 3, 2])
+    for col, h in zip(header_cols, headers):
+        col.markdown(f"<span style='font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9A6A12;'>{h}</span>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:0.4rem 0 0.8rem 0; border:none; border-top:1.5px solid #CADDD8;'>", unsafe_allow_html=True)
+
+    for p in payments:
+        row = st.columns([2, 2, 2, 2, 3, 2])
+        payer_disp = p.get("payerName") or get_username(p["payerUserId"])
+        payee_disp = p.get("payeeName") or get_username(p["payeeUserId"])
+        row[0].write(payer_disp)
+        row[1].write(payee_disp)
+        row[2].markdown(f"<span class='money-tabular'>{format_currency(p['amount'])}</span>", unsafe_allow_html=True)
+        row[3].markdown(badge_html(p["paymentStatus"]), unsafe_allow_html=True)
+        row[4].write(format_datetime(p["createdAt"]))
+
+        with row[5]:
+            status = p["paymentStatus"]
+            if status == "pending":
+                # Payer can settle; either party can report
+                if p["payerUserId"] == current_user_id and on_settle:
+                    if st.button("✅ Settle", key=f"{key_prefix}_settle_{p['id']}"):
+                        on_settle(p["id"])
+                if on_report:
+                    if st.button("⚠️ Report", key=f"{key_prefix}_report_{p['id']}"):
+                        on_report(p["id"])
+            else:
+                st.write("—")
+

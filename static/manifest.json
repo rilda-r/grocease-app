@@ -1,0 +1,25 @@
+{
+  "name": "GrocEase — Smart Grocery Tracker",
+  "short_name": "GrocEase",
+  "description": "Smart Shared Grocery Tracker and Budget Manager",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0F766E",
+  "theme_color": "#0F766E",
+  "icons": [
+    {
+      "src": "/app/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
