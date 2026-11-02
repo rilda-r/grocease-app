@@ -97,54 +97,50 @@ def render_payment_table(*args, **kwargs):
 
             st.markdown('<div class="groc-card-row">', unsafe_allow_html=True)
             with st.container(border=True):
-                col_info, col_amt, col_action = st.columns([3.0, 1.2, 1.8], vertical_alignment="center")
-                with col_info:
-                    st.markdown(
-                        f"""
-                        <div class="groc-item-inline" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; overflow:hidden; min-width:0;">
-                            <span style="font-size:0.92rem; font-weight:700; color:#10272A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">👤 {payer_disp} ➔ {payee_disp}</span>
-                            <span style="font-size:0.72rem; color:#4A6568; white-space:nowrap; flex-shrink:0;">📅 {format_datetime(created_val)}</span>
+                st.markdown(
+                    f"""
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                        <div style="display:flex; flex-direction:column; gap:4px; min-width:0; flex:1;">
+                            <div style="font-size:0.95rem; font-weight:700; color:#10272A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                👤 {payer_disp} ➔ {payee_disp}
+                            </div>
+                            <div style="font-size:0.75rem; color:#4A6568; white-space:nowrap;">
+                                📅 {format_datetime(created_val)}
+                            </div>
                         </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0;">
+                            <div>{badge_html(status)}</div>
+                            <div style="font-size:1.02rem; font-weight:800; color:#0F766E; white-space:nowrap; margin-top:1px;">
+                                {format_currency(amount_val)}
+                            </div>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-                with col_amt:
-                    st.markdown(
-                        f"<div style='font-size:0.95rem; font-weight:800; color:#0F766E; text-align:right; white-space:nowrap;'>{format_currency(amount_val)}</div>",
-                        unsafe_allow_html=True,
-                    )
-
-                with col_action:
-                    if status == "pending":
-                        if is_payer and on_settle:
-                            if st.button("💸 Settle", key=f"{key_prefix}_settle_{p_id}", use_container_width=True, help="Mark payment as sent"):
-                                on_settle(p_id)
-                        elif is_payee and on_remind:
-                            if st.button("🔔 Remind", key=f"{key_prefix}_remind_{p_id}", use_container_width=True, help="Send payment reminder"):
-                                on_remind(p_id)
-                        elif on_report and is_payer:
-                            if st.button("⚠️ Report", key=f"{key_prefix}_report_{p_id}", use_container_width=True):
-                                on_report(p_id)
-                        else:
-                            st.markdown(f"<div style='text-align:right;'>{badge_html('pending')}</div>", unsafe_allow_html=True)
-                    elif status in ("paid", "awaiting_confirmation"):
-                        if is_payee and on_confirm:
-                            col_c1, col_c2 = st.columns([1.1, 0.9], gap="small")
-                            with col_c1:
-                                if st.button("✅ Confirm", key=f"{key_prefix}_confirm_{p_id}", type="primary", use_container_width=True, help="Confirm money received in your account"):
-                                    on_confirm(p_id)
-                            with col_c2:
-                                if on_dispute and st.button("❌ No", key=f"{key_prefix}_dispute_{p_id}", use_container_width=True, help="Payment not received; resets status to pending"):
-                                    on_dispute(p_id)
-                        elif is_payer:
-                            st.markdown(f"<div style='text-align:right;'>{badge_html('awaiting_confirmation')}</div>", unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"<div style='text-align:right;'>{badge_html('awaiting_confirmation')}</div>", unsafe_allow_html=True)
-                    elif status == "settled":
-                        st.markdown(f"<div style='text-align:right;'>{badge_html('settled')}</div>", unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"<div style='text-align:right;'>{badge_html(status)}</div>", unsafe_allow_html=True)
+                if status == "pending":
+                    if is_payer and on_settle:
+                        st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
+                        if st.button("💸 Settle Payment", key=f"{key_prefix}_settle_{p_id}", use_container_width=True, help="Mark payment as sent"):
+                            on_settle(p_id)
+                    elif is_payee and on_remind:
+                        st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
+                        if st.button("🔔 Send Reminder", key=f"{key_prefix}_remind_{p_id}", use_container_width=True, help="Send payment reminder"):
+                            on_remind(p_id)
+                    elif on_report and is_payer:
+                        st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
+                        if st.button("⚠️ Report", key=f"{key_prefix}_report_{p_id}", use_container_width=True):
+                            on_report(p_id)
+                elif status in ("paid", "awaiting_confirmation") and is_payee and on_confirm:
+                    st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
+                    col_c1, col_c2 = st.columns([1.1, 0.9], gap="small")
+                    with col_c1:
+                        if st.button("✅ Confirm", key=f"{key_prefix}_confirm_{p_id}", type="primary", use_container_width=True, help="Confirm money received in your account"):
+                            on_confirm(p_id)
+                    with col_c2:
+                        if on_dispute and st.button("❌ No", key=f"{key_prefix}_dispute_{p_id}", use_container_width=True, help="Payment not received; resets status to pending"):
+                            on_dispute(p_id)
             st.markdown('</div>', unsafe_allow_html=True)
         except Exception:
             continue
