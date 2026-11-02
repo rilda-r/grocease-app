@@ -228,7 +228,9 @@ def render_budget_utilization_chart(budgets: list, spending_by_category: dict):
         mpatches.Patch(color=OCHRE,    label="Limit"),
         mpatches.Patch(color=BURGUNDY, label="Spent"),
     ]
-    ax.legend(handles=legend_patches, fontsize=8, framealpha=0, loc="lower right")
+    max_val = max(max(limits) if limits else 0, max(spendings) if spendings else 0, 1.0)
+    ax.set_xlim(0, max_val * 1.15)
+    ax.legend(handles=legend_patches, fontsize=8, framealpha=0.8, facecolor=CREAM, loc="upper right")
     plt.tight_layout()
     st.pyplot(fig)
     plt.close(fig)
@@ -261,7 +263,7 @@ def render_monthly_history_chart(history_records: list):
     ax.set_title("Historical Budget vs. Spent vs. Saved", fontsize=11, color=BURGUNDY, fontweight="bold")
     ax.set_xticks(x)
     ax.set_xticklabels(months, fontsize=9)
-    ax.legend(fontsize=8, framealpha=0)
+    ax.legend(fontsize=8, framealpha=0.8, facecolor=CREAM, loc="upper right")
     plt.tight_layout()
     st.pyplot(fig)
     plt.close(fig)
@@ -290,7 +292,9 @@ def render_month_end_summary_chart(category_breakdown: dict):
     ax.set_yticklabels(categories, fontsize=9)
     ax.set_xlabel("Amount (₹)", fontsize=9, color=DEEP_CHOCOLATE)
     ax.set_title("Month-End Breakdown: Used vs. Saved", fontsize=11, color=BURGUNDY, fontweight="bold")
-    ax.legend(fontsize=8, framealpha=0, loc="lower right")
+    max_val = max(max(spent_vals) if spent_vals else 0, max(saved_vals) if saved_vals else 0, 1.0)
+    ax.set_xlim(0, max_val * 1.15)
+    ax.legend(fontsize=8, framealpha=0.8, facecolor=CREAM, loc="upper right")
     plt.tight_layout()
     st.pyplot(fig)
     plt.close(fig)
