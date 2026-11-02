@@ -60,9 +60,11 @@ BASE_CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-html, body, [class*="css"] {{
+html, body, [class*="css"], .stApp {{
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     color: {DEEP_CHOCOLATE} !important;
+    overscroll-behavior-y: none !important;
+    overscroll-behavior: none !important;
 }}
 
 /* Warm Dotted Kitchen Counter Texture */

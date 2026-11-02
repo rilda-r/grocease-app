@@ -262,8 +262,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        swipeRefresh.setColorSchemeColors(ContextCompat.getColor(this, R.color.teal_primary));
-        swipeRefresh.setOnRefreshListener(() -> webView.reload());
+        // Disable swipe-to-refresh so scrolling up/down never reloads the page accidentally
+        swipeRefresh.setEnabled(false);
 
         btnRetry.setOnClickListener(v -> {
             layoutError.setVisibility(View.GONE);
