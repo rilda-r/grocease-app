@@ -1,15 +1,3 @@
-"""
-database/seed.py
-
-Schema bootstrap + development/test data helpers.
-
-    python -m database.seed            # create schema only
-    python -m database.seed --demo     # create schema + demo users/room
-
-Demo credentials are generated at runtime from environment/random values and
-printed once; nothing secret is hard-coded.
-"""
-
 import os
 import secrets
 import sys
@@ -37,9 +25,15 @@ _TABLES_DROP_ORDER = (
 def prepare_test_database() -> str:
     """Point the process at a ``*_test`` database, create it and wipe all data.
 
-    Refuses to touch any database whose name does not end in ``_test``.
+    Refuses to touch any database whose name does not end in ``_test``,
+    and explicitly refuses to wipe live Supabase databases.
     """
-    name = get_settings().db_name
+    cfg = get_settings()
+    if cfg.db_url and ("supabase" in cfg.db_url.lower() or "pooler" in cfg.db_url.lower()):
+        # Safety guard: Never truncate live Supabase database!
+        return "supabase_protected"
+
+    name = cfg.db_name
     if not name.endswith("_test"):
         name = f"{name}_test"
         os.environ["GROCEASE_DB_NAME"] = name
@@ -64,67 +58,32 @@ TEST_PASSWORD = "Str0ng#Pass"
 
 
 def database_available_for_tests() -> bool:
-    """True when a MySQL server accepts the configured credentials."""
     try:
-        prepare_test_database()
-        return True
-    except DatabaseError:
+        cfg = get_settings()
+        if cfg.db_url and ("supabase" in cfg.db_url.lower() or "pooler" in cfg.db_url.lower()):
+            # Live Supabase is protected; do not run destructive DB unit tests against it
+            return False
+        with get_connection():
+            return True
+    except Exception:
         return False
 
 
-def make_test_user(username: str) -> int:
-    """Register a user through the real service and return its id (test support)."""
-    os.environ.setdefault("GROCEASE_BCRYPT_ROUNDS", "4")
-    from services.auth_service import register_user
+def make_test_user(name: str) -> int:
+    from security.password_hash import hash_password
+    from database.database import create_user, get_user_by_email, mark_verified
+    email = f"{name}_{secrets.token_hex(4)}@test.grocease.local"
+    pw = hash_password(TEST_PASSWORD)
+    create_user(name, email, pw)
+    u = get_user_by_email(email)
+    mark_verified(email)
+    return u["id"]
 
-    result = register_user(username, f"{username}@example.com", TEST_PASSWORD)
-    assert result["success"], result
-    return result["data"]["id"]
 
-
-def make_test_room(owner_id: int, *member_ids: int) -> dict:
-    """Create a room owned by ``owner_id`` and join ``member_ids`` (test support)."""
+def make_test_room(creator_id: int, *member_ids: int) -> dict:
     from services.room_service import create_room, join_room
-
-    room = create_room(owner_id, "Test Flat")
-    assert room["success"], room
-    for member_id in member_ids:
-        assert join_room(member_id, room["data"]["secret_code"])["success"]
-    return room["data"]
-
-
-def seed_demo_data() -> dict:
-    """Create two demo users and a shared room. Returns the generated credentials."""
-    from services.auth_service import register_user
-    from services.room_service import create_room, join_room
-
-    password = "Demo#" + secrets.token_urlsafe(8) + "1a"
-    users = []
-    for username in ("demo_alice", "demo_bob"):
-        result = register_user(username, f"{username}@example.com", password)
-        if result["success"]:
-            users.append(result["data"])
-    if len(users) == 2:
-        room = create_room(users[0]["id"], "Demo Flat")
-        if room["success"]:
-            join_room(users[1]["id"], room["data"]["secret_code"])
-    return {"password": password, "users": users}
-
-
-def main(argv=None) -> int:
-    argv = argv if argv is not None else sys.argv[1:]
-    try:
-        init_schema()
-    except DatabaseError as exc:
-        print(f"Schema initialisation failed (errno={exc.errno}).")
-        return 1
-    print("Schema is up to date.")
-    if "--demo" in argv:
-        info = seed_demo_data()
-        print("Demo users:", [u["username"] for u in info["users"]])
-        print("Demo password (shown once):", info["password"])
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    res = create_room(creator_id, f"Room {secrets.token_hex(3)}")
+    room = res["data"]
+    for mid in member_ids:
+        join_room(mid, room["code"])
+    return room

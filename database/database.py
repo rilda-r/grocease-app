@@ -659,14 +659,20 @@ def get_room_payments_live(room_id: int) -> list:
 
 def settle_payment_live(payment_id: int) -> bool:
     """Mark a payment as settled in Supabase PostgreSQL."""
-    execute("UPDATE payments SET payment_status = 'settled', settled_at = %s WHERE id = %s", (datetime.utcnow(), int(payment_id)))
-    return True
+    try:
+        rows = execute("UPDATE payments SET payment_status = 'settled', settled_at = %s WHERE id = %s", (datetime.utcnow(), int(payment_id)))
+        return bool(rows and rows > 0)
+    except Exception:
+        return False
 
 
 def report_payment_live(payment_id: int) -> bool:
     """Mark a payment as reported in Supabase PostgreSQL."""
-    execute("UPDATE payments SET payment_status = 'reported', reported_at = %s WHERE id = %s", (datetime.utcnow(), int(payment_id)))
-    return True
+    try:
+        rows = execute("UPDATE payments SET payment_status = 'reported', reported_at = %s WHERE id = %s", (datetime.utcnow(), int(payment_id)))
+        return bool(rows and rows > 0)
+    except Exception:
+        return False
 
 
 
@@ -688,10 +694,10 @@ def remind_payment_live(payment_id: int, requester_user_id: int) -> dict:
                    COALESCE(NULLIF(pp.nickname, ''), NULLIF(up.nickname, ''), NULLIF(up.username, ''), NULLIF(up.full_name, ''), 'Member') AS payer_name,
                    COALESCE(NULLIF(pe.nickname, ''), NULLIF(ue.nickname, ''), NULLIF(ue.username, ''), NULLIF(ue.full_name, ''), 'Someone') AS payee_name
             FROM payments p
-            JOIN rooms r ON r.id = p.room_id
-            JOIN users up ON up.id = p.payer_user_id
+            LEFT JOIN rooms r ON r.id = p.room_id
+            LEFT JOIN users up ON up.id = p.payer_user_id
             LEFT JOIN profiles pp ON pp.user_id = up.id
-            JOIN users ue ON ue.id = p.payee_user_id
+            LEFT JOIN users ue ON ue.id = p.payee_user_id
             LEFT JOIN profiles pe ON pe.user_id = ue.id
             WHERE p.id = %s
             """,
@@ -757,17 +763,27 @@ def get_unread_notifications(user_id: int, limit: int = 20) -> list:
 
 def mark_notification_read(notification_id: int, user_id: int) -> bool:
     """Mark one of the user's notifications as read."""
-    execute(
-        "UPDATE notifications SET is_read = TRUE WHERE id = %s AND user_id = %s",
-        (int(notification_id), int(user_id)),
-    )
-    return True
+    if not notification_id or not user_id:
+        return False
+    try:
+        execute(
+            "UPDATE notifications SET is_read = TRUE WHERE id = %s AND user_id = %s",
+            (int(notification_id), int(user_id)),
+        )
+        return True
+    except Exception:
+        return False
 
 
 def mark_all_notifications_read(user_id: int) -> bool:
     """Mark all of the user's notifications as read."""
-    execute(
-        "UPDATE notifications SET is_read = TRUE WHERE user_id = %s AND is_read = FALSE",
-        (int(user_id),),
-    )
-    return True
+    if not user_id:
+        return False
+    try:
+        execute(
+            "UPDATE notifications SET is_read = TRUE WHERE user_id = %s AND is_read = FALSE",
+            (int(user_id),),
+        )
+        return True
+    except Exception:
+        return False

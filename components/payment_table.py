@@ -10,7 +10,14 @@ from utils.formatting import format_currency, format_datetime, badge_html
 from mock.mock_data import get_username
 
 
-def render_payment_table(payments: list, current_user_id: int, on_settle=None, on_remind=None, key_prefix: str = ""):
+def render_payment_table(
+    payments: list,
+    current_user_id: int,
+    on_settle=None,
+    on_remind=None,
+    on_report=None,
+    key_prefix: str = "",
+):
     """
     Render payment records.
 
@@ -19,6 +26,7 @@ def render_payment_table(payments: list, current_user_id: int, on_settle=None, o
         current_user_id: logged-in user id
         on_settle: callback(payment_id)
         on_remind: callback(payment_id) - shown only to the person who is owed
+        on_report: optional callback(payment_id) for backward-compatibility
         key_prefix: unique prefix for widget keys
     """
     if not payments:
@@ -43,24 +51,32 @@ def render_payment_table(payments: list, current_user_id: int, on_settle=None, o
 
     for p in payments:
         row = st.columns([2, 2, 2, 2, 3, 2])
-        payer_disp = p.get("payerName") or get_username(p["payerUserId"])
-        payee_disp = p.get("payeeName") or get_username(p["payeeUserId"])
+        payer_id = p.get("payerUserId") if p.get("payerUserId") is not None else p.get("payer_user_id")
+        payee_id = p.get("payeeUserId") if p.get("payeeUserId") is not None else p.get("payee_user_id")
+
+        payer_disp = p.get("payerName") or get_username(payer_id)
+        payee_disp = p.get("payeeName") or get_username(payee_id)
+        amount_val = float(p.get("amount", 0.0))
+        status = p.get("paymentStatus") or p.get("payment_status", "pending")
+        created_val = p.get("createdAt") or p.get("created_at", "")
+
         row[0].write(payer_disp)
         row[1].write(payee_disp)
-        row[2].markdown(f"<span class='money-tabular'>{format_currency(p['amount'])}</span>", unsafe_allow_html=True)
-        row[3].markdown(badge_html(p["paymentStatus"]), unsafe_allow_html=True)
-        row[4].write(format_datetime(p["createdAt"]))
+        row[2].markdown(f"<span class='money-tabular'>{format_currency(amount_val)}</span>", unsafe_allow_html=True)
+        row[3].markdown(badge_html(status), unsafe_allow_html=True)
+        row[4].write(format_datetime(created_val))
 
         with row[5]:
-            status = p["paymentStatus"]
             if status == "pending":
                 # Payer can settle; only the person who is owed (the shopper) can remind
-                if p["payerUserId"] == current_user_id and on_settle:
+                if payer_id is not None and int(payer_id) == int(current_user_id) and on_settle:
                     if st.button("✅ Settle", key=f"{key_prefix}_settle_{p['id']}"):
                         on_settle(p["id"])
-                if p["payeeUserId"] == current_user_id and on_remind:
+                if payee_id is not None and int(payee_id) == int(current_user_id) and on_remind:
                     if st.button("🔔 Remind", key=f"{key_prefix}_remind_{p['id']}"):
                         on_remind(p["id"])
+                if on_report and (payer_id is not None and int(payer_id) == int(current_user_id)):
+                    if st.button("⚠️ Report", key=f"{key_prefix}_report_{p['id']}"):
+                        on_report(p["id"])
             else:
                 st.write("—")
-

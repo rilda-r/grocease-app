@@ -156,7 +156,7 @@ else:
         for col_idx, item in enumerate(chunk):
             with grid_cols[col_idx]:
                 added_by = item.get("addedByName") or item.get("added_by_name") or "Member"
-                total_qty = item["quantity"]
+                total_qty = item.get("quantity", 1)
                 purchased_qty = item.get("purchasedQuantity", 0) or 0
                 remaining_qty = max(0, total_qty - purchased_qty)
 
@@ -168,7 +168,7 @@ else:
                                 box-shadow:0 2px 8px -2px rgba(16, 39, 42, 0.05);">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <div style="display:flex; align-items:center; gap:0.4rem; overflow:hidden;">
-                                <span style="font-size:0.95rem; font-weight:700; color:#10272A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🛒 {item['itemName']}</span>
+                                <span style="font-size:0.95rem; font-weight:700; color:#10272A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🛒 {item.get('itemName') or item.get('item_name', 'Item')}</span>
                                 <span style='font-size:0.7rem; color:#4A6568; background:#F5FAF8; border:1px solid #CADDD8; padding:1px 6px; border-radius:10px; font-weight:600; white-space:nowrap;'>👤 {added_by}</span>
                             </div>
                             <div style="display:flex; align-items:center; gap:0.45rem; flex-shrink:0;">
@@ -204,7 +204,7 @@ if purchased_items:
         for col_idx, item in enumerate(chunk):
             with grid_cols[col_idx]:
                 added_by = item.get("addedByName") or item.get("added_by_name") or "Member"
-                total_qty = item["quantity"]
+                total_qty = item.get("quantity", 1)
                 purchased_count = item.get("purchasedQuantity", total_qty) or total_qty
 
                 # Compact Purchased Card

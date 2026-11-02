@@ -19,26 +19,35 @@ from database.database import (
 
 def render_notification_banner(user_id: int, key_prefix: str = "global") -> None:
     """Show the user's unread notifications with a Dismiss button on each."""
-    notifications = get_unread_notifications(user_id)
+    if not user_id:
+        return
+
+    try:
+        notifications = get_unread_notifications(user_id)
+    except Exception:
+        notifications = []
+
     if not notifications:
         return
 
     for n in notifications:
-        col_msg, col_btn = st.columns([5, 1], vertical_alignment="center")
+        col_msg, col_btn = st.columns([5, 1])
         with col_msg:
+            msg = n.get("message", "")
             st.markdown(
                 f"""
                 <div style="background:#FFF8E8; border:1px solid #E3C680; border-left:4px solid #E3A02E;
                             border-radius:12px; padding:0.6rem 0.9rem;">
-                    <span style="color:#10272A; font-size:0.95rem;">🔔 {n['message']}</span>
+                    <span style="color:#10272A; font-size:0.95rem;">🔔 {msg}</span>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
         with col_btn:
-            if st.button("Dismiss", key=f"{key_prefix}_notif_{n['id']}", use_container_width=True):
+            notif_id = n.get("id")
+            if st.button("Dismiss", key=f"{key_prefix}_notif_{notif_id}", use_container_width=True):
                 try:
-                    mark_notification_read(n["id"], user_id)
+                    mark_notification_read(notif_id, user_id)
                 except Exception:
                     pass
                 st.rerun()

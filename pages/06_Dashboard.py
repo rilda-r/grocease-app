@@ -77,11 +77,11 @@ for room in my_rooms:
 
 amount_owe = sum(
     float(p.get("amount", 0)) for p in all_payments
-    if p.get("payer_user_id") == user_id and p.get("payment_status") == "pending"
+    if (p.get("payer_user_id") == user_id or p.get("payerUserId") == user_id) and (p.get("payment_status") == "pending" or p.get("paymentStatus") == "pending")
 )
 amount_owed_to_me = sum(
     float(p.get("amount", 0)) for p in all_payments
-    if p.get("payee_user_id") == user_id and p.get("payment_status") == "pending"
+    if (p.get("payee_user_id") == user_id or p.get("payeeUserId") == user_id) and (p.get("payment_status") == "pending" or p.get("paymentStatus") == "pending")
 )
 
 exp_res = svc_get_personal_expenses(user_id)
@@ -140,7 +140,7 @@ with left_col:
         render_empty_state("🏠", "No rooms yet", "Join or create a room to get started.")
     else:
         for room in my_rooms:
-            pending_in_room = sum(1 for i in all_items if i["roomId"] == room["id"] and i["status"] == "pending")
+            pending_in_room = sum(1 for i in all_items if (i.get("roomId") == room["id"] or i.get("room_id") == room["id"]) and i.get("status") == "pending")
             st.markdown(
                 f"""
                 <div style="background:#F7FBFA; border:1px solid #CADDD8; border-left:4px solid #0F766E;
@@ -163,13 +163,13 @@ with left_col:
         render_empty_state("✅", "All clear!", "No pending items across your rooms.")
     else:
         for item in pending_items[:5]:
-            room_name = next((r["name"] for r in my_rooms if r["id"] == item["roomId"]), "—")
+            room_name = next((r["name"] for r in my_rooms if r["id"] == (item.get("roomId") or item.get("room_id"))), "—")
             st.markdown(
                 f"""
                 <div style="background:#F7FBFA; border:1px solid #CADDD8; border-radius:14px;
                             padding:0.65rem 1rem; margin-bottom:0.45rem; display:flex; justify-content:space-between; align-items:center;
                             box-shadow:0 2px 6px rgba(16, 39, 42, 0.03);">
-                    <div style="font-size:0.92rem; font-weight:600; color:#10272A;">🛒 {item['itemName']} <span style="color:#0F766E; font-weight:700;">×{item['quantity']}</span></div>
+                    <div style="font-size:0.92rem; font-weight:600; color:#10272A;">🛒 {item.get('itemName') or item.get('item_name', 'Item')} <span style="color:#0F766E; font-weight:700;">×{item.get('quantity', 1)}</span></div>
                     <div style="font-size:0.78rem; color:#4A6568; background:#F5FAF8; border:1px solid #CADDD8; border-radius:8px; padding:2px 8px;">{room_name}</div>
                 </div>
                 """,

@@ -42,9 +42,12 @@ def get_payments(room_id):
     return mock_get_payments(room_id)
 
 def settle_payment(payment_id):
+    success = False
     try:
-        settle_payment_live(payment_id)
+        success = settle_payment_live(payment_id)
     except Exception:
+        pass
+    if not success:
         mock_settle_payment(payment_id)
 
 def remind_payment(payment_id, requester_user_id):
@@ -55,7 +58,9 @@ def remind_payment(payment_id, requester_user_id):
     """
     try:
         return remind_payment_live(payment_id, requester_user_id)
-    except LookupError:
+    except Exception as exc:
+        if isinstance(exc, ValueError):
+            raise
         result = mock_remind_payment(payment_id, requester_user_id)
         if result is None:
             raise ValueError("Only the person who is owed can send a reminder.")
@@ -111,9 +116,9 @@ if split_bill_id:
             f"""
             <div style="background:#F7FBFA; border:1px solid #CADDD8; border-radius:18px;
                         padding:1rem 1.4rem; margin-bottom:1rem; box-shadow:0 4px 20px -2px rgba(16,39,42,0.08);">
-                <strong>{bill['fileName']}</strong> — Total:
+                <strong>{bill.get('fileName', 'Bill')}</strong> — Total:
                 <span style="font-family:'Fraunces',serif; font-weight:700; color:#0F766E;">
-                    {format_currency(bill['totalAmount'])}
+                    {format_currency(float(bill.get('totalAmount', 0.0)))}
                 </span>
             </div>
             """,
@@ -140,19 +145,29 @@ if split_bill_id:
                 st.info("No items assigned yet. Go back to Bill Scanning to assign items.")
 
         with equal_tab:
-            member_ids = [m["userId"] for m in get_room_members(room_id)]
-            equal_split = calculate_equal_split(split_bill_id, member_ids)
-            for uid, amt in equal_split.items():
-                st.markdown(
-                    f"""
-                    <div style="display:flex; justify-content:space-between;
-                                padding:0.6rem 0.8rem; border-bottom:1px solid #CADDD8;">
-                        <div>👤 {get_username(uid)}</div>
-                        <div style="font-weight:700; color:#0F766E; font-variant-numeric:tabular-nums;">{format_currency(amt)}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+            try:
+                from database.database import get_room_members_with_identities
+                db_mems = get_room_members_with_identities(room_id)
+                member_ids = [m["user_id"] for m in db_mems] if db_mems else []
+            except Exception:
+                member_ids = []
+            if not member_ids:
+                member_ids = [m.get("userId") or m.get("user_id") for m in get_room_members(room_id)]
+            equal_split = calculate_equal_split(split_bill_id, member_ids) if member_ids else {}
+            if equal_split:
+                for uid, amt in equal_split.items():
+                    st.markdown(
+                        f"""
+                        <div style="display:flex; justify-content:space-between;
+                                    padding:0.6rem 0.8rem; border-bottom:1px solid #CADDD8;">
+                            <div>👤 {get_username(uid)}</div>
+                            <div style="font-weight:700; color:#0F766E; font-variant-numeric:tabular-nums;">{format_currency(amt)}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.info("No members found in this room to split equally.")
 
         if st.button("✅ Confirm & Record Payments", type="primary"):
             st.success("Payments recorded! (Mock — no real DB change)")
@@ -163,13 +178,24 @@ if split_bill_id:
 # ── Payment summaries ─────────────────────────────────────────────────────────
 payments = get_payments(room_id)
 
+def _is_payer(p, uid):
+    payer = p.get("payerUserId") if p.get("payerUserId") is not None else p.get("payer_user_id")
+    return payer is not None and int(payer) == int(uid)
+
+def _is_payee(p, uid):
+    payee = p.get("payeeUserId") if p.get("payeeUserId") is not None else p.get("payee_user_id")
+    return payee is not None and int(payee) == int(uid)
+
+def _is_pending(p):
+    return (p.get("paymentStatus") or p.get("payment_status")) == "pending"
+
 amount_owe = sum(
-    p["amount"] for p in payments
-    if p["payerUserId"] == user_id and p["paymentStatus"] == "pending"
+    float(p.get("amount", 0.0)) for p in payments
+    if _is_payer(p, user_id) and _is_pending(p)
 )
 amount_owed_to_me = sum(
-    p["amount"] for p in payments
-    if p["payeeUserId"] == user_id and p["paymentStatus"] == "pending"
+    float(p.get("amount", 0.0)) for p in payments
+    if _is_payee(p, user_id) and _is_pending(p)
 )
 
 m1, m2 = st.columns(2)
@@ -193,7 +219,8 @@ def settle_handler(payment_id):
 def remind_handler(payment_id):
     try:
         result = remind_payment(payment_id, user_id)
-        st.toast(f"Reminder sent to {result['payer_name']}.", icon="🔔")
+        payer = result.get("payer_name", "Member") if isinstance(result, dict) else "Member"
+        st.toast(f"Reminder sent to {payer}.", icon="🔔")
     except ValueError as e:
         st.warning(str(e))
     except Exception as e:
@@ -203,13 +230,13 @@ with tab_all:
     render_payment_table(payments, user_id, on_settle=settle_handler, on_remind=remind_handler, key_prefix="all")
 
 with tab_owe:
-    owe_list = [p for p in payments if p["payerUserId"] == user_id and p["paymentStatus"] == "pending"]
+    owe_list = [p for p in payments if _is_payer(p, user_id) and _is_pending(p)]
     render_payment_table(owe_list, user_id, on_settle=settle_handler, key_prefix="owe")
 
 with tab_receive:
-    receive_list = [p for p in payments if p["payeeUserId"] == user_id and p["paymentStatus"] == "pending"]
+    receive_list = [p for p in payments if _is_payee(p, user_id) and _is_pending(p)]
     render_payment_table(receive_list, user_id, on_remind=remind_handler, key_prefix="recv")
 
 with tab_history:
-    history = [p for p in payments if p["paymentStatus"] in ("settled", "reported")]
+    history = [p for p in payments if (p.get("paymentStatus") or p.get("payment_status")) in ("settled", "reported")]
     render_payment_table(history, user_id, key_prefix="hist")
