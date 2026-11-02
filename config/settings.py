@@ -17,6 +17,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Sync Streamlit Cloud secrets to os.environ if running on Streamlit Cloud
+try:
+    import streamlit as _st
+    if hasattr(_st, 'secrets'):
+        for _k, _v in _st.secrets.items():
+            if isinstance(_v, str) and _k not in os.environ:
+                os.environ[_k] = _v
+except Exception:
+    pass
+
 # ---------------------------------------------------------------------------
 # Business constants (not secrets, safe to keep in code)
 # ---------------------------------------------------------------------------
