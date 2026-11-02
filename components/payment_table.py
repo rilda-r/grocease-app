@@ -111,7 +111,7 @@ def render_payment_table(*args, **kwargs):
 
                 with col_amt:
                     st.markdown(
-                        f"<div style='font-size:0.95rem; font-weight:800; color:#0F766E; text-align:right; white-space:nowrap;'>{format_currency(amount_val)} {badge_html(status)}</div>",
+                        f"<div style='font-size:0.95rem; font-weight:800; color:#0F766E; text-align:right; white-space:nowrap;'>{format_currency(amount_val)}</div>",
                         unsafe_allow_html=True,
                     )
 
@@ -127,19 +127,17 @@ def render_payment_table(*args, **kwargs):
                             if st.button("⚠️ Report", key=f"{key_prefix}_report_{p_id}", use_container_width=True):
                                 on_report(p_id)
                         else:
-                            st.markdown("<div style='text-align:right; font-size:0.82rem; color:#E3A02E; font-weight:600;'>Pending</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='text-align:right;'>{badge_html('pending')}</div>", unsafe_allow_html=True)
                     elif status in ("paid", "awaiting_confirmation"):
-                        if is_payee:
-                            if on_confirm and st.button("✅ Confirm", key=f"{key_prefix}_confirm_{p_id}", type="primary", use_container_width=True, help="Confirm money received in your account"):
+                        if is_payee and on_confirm:
+                            if st.button("✅ Confirm", key=f"{key_prefix}_confirm_{p_id}", type="primary", use_container_width=True, help="Confirm money received in your account"):
                                 on_confirm(p_id)
-                        elif is_payer:
-                            st.markdown("<div style='text-align:right; font-size:0.82rem; color:#0F766E; font-weight:600; white-space:nowrap;'>⏳ Awaiting Confirm</div>", unsafe_allow_html=True)
                         else:
-                            st.markdown("<div style='text-align:right; font-size:0.82rem; color:#0F766E; font-weight:600;'>Paid</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='text-align:right;'>{badge_html('awaiting_confirmation')}</div>", unsafe_allow_html=True)
                     elif status == "settled":
-                        st.markdown("<div style='text-align:right; font-size:0.82rem; color:#6B8F71; font-weight:700;'>✅ Settled</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='text-align:right;'>{badge_html('settled')}</div>", unsafe_allow_html=True)
                     else:
-                        st.markdown(f"<div style='text-align:right; font-size:0.82rem; color:#6B8F71; font-weight:600;'>{status.capitalize()}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='text-align:right;'>{badge_html(status)}</div>", unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
         except Exception:
             continue
