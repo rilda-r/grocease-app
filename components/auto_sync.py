@@ -23,3 +23,4 @@ def setup_auto_sync(interval_ms: int = 3500, key: str = "room_auto_sync", pause:
         st_autorefresh(interval=interval_ms, key=key)
     except Exception:
         pass
+

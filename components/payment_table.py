@@ -14,6 +14,8 @@ def render_payment_table(
     payments: list,
     current_user_id: int,
     on_settle=None,
+    on_confirm=None,
+    on_dispute=None,
     on_remind=None,
     on_report=None,
     key_prefix: str = "",
@@ -78,15 +80,25 @@ def render_payment_table(
             with col_action:
                 if status == "pending":
                     if is_payer and on_settle:
-                        if st.button("✅ Settle", key=f"{key_prefix}_settle_{p_id}", use_container_width=True):
+                        if st.button("💸 Settle", key=f"{key_prefix}_settle_{p_id}", use_container_width=True, help="Mark payment as sent"):
                             on_settle(p_id)
                     elif is_payee and on_remind:
-                        if st.button("🔔 Remind", key=f"{key_prefix}_remind_{p_id}", use_container_width=True):
+                        if st.button("🔔 Remind", key=f"{key_prefix}_remind_{p_id}", use_container_width=True, help="Send payment reminder"):
                             on_remind(p_id)
                     elif on_report and is_payer:
                         if st.button("⚠️ Report", key=f"{key_prefix}_report_{p_id}", use_container_width=True):
                             on_report(p_id)
                     else:
                         st.markdown("<div style='text-align:right; font-size:0.82rem; color:#E3A02E; font-weight:600;'>Pending</div>", unsafe_allow_html=True)
+                elif status in ("paid", "awaiting_confirmation"):
+                    if is_payee:
+                        if on_confirm and st.button("✅ Confirm", key=f"{key_prefix}_confirm_{p_id}", type="primary", use_container_width=True, help="Confirm money received in your account"):
+                            on_confirm(p_id)
+                    elif is_payer:
+                        st.markdown("<div style='text-align:right; font-size:0.82rem; color:#0F766E; font-weight:600; white-space:nowrap;'>⏳ Awaiting Confirm</div>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<div style='text-align:right; font-size:0.82rem; color:#0F766E; font-weight:600;'>Paid</div>", unsafe_allow_html=True)
+                elif status == "settled":
+                    st.markdown("<div style='text-align:right; font-size:0.82rem; color:#6B8F71; font-weight:700;'>✅ Settled</div>", unsafe_allow_html=True)
                 else:
                     st.markdown(f"<div style='text-align:right; font-size:0.82rem; color:#6B8F71; font-weight:600;'>{status.capitalize()}</div>", unsafe_allow_html=True)

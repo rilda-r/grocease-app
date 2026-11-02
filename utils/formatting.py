@@ -31,27 +31,31 @@ def format_datetime(iso_str: str) -> str:
 
 
 STATUS_BADGE = {
-    "pending":     ("⏳", "#E3A02E", "#FBF3E3"),
-    "purchased":   ("✅", "#6B8F71", "#EAF1EB"),
-    "unavailable": ("❌", "#8C1C13", "#FCEAE8"),
-    "settled":     ("✅", "#6B8F71", "#EAF1EB"),
-    "reported":    ("⚠️", "#E3A02E", "#FBF3E3"),
-    "completed":   ("✅", "#6B8F71", "#EAF1EB"),
-    "failed":      ("❌", "#8C1C13", "#FCEAE8"),
-    "processing":  ("⏳", "#E3A02E", "#FBF3E3"),
-    "creator":     ("👑", "#0F766E", "#FCEAE8"),
-    "member":      ("👤", "#0E3B3A", "#F7FBFA"),
+    "pending":               ("⏳", "#E3A02E", "#FBF3E3"),
+    "paid":                  ("⏳", "#0F766E", "#E6F4F1"),
+    "awaiting_confirmation": ("⏳", "#0F766E", "#E6F4F1"),
+    "purchased":             ("✅", "#6B8F71", "#EAF1EB"),
+    "unavailable":           ("❌", "#8C1C13", "#FCEAE8"),
+    "settled":               ("✅", "#6B8F71", "#EAF1EB"),
+    "reported":              ("⚠️", "#E3A02E", "#FBF3E3"),
+    "completed":             ("✅", "#6B8F71", "#EAF1EB"),
+    "failed":                ("❌", "#8C1C13", "#FCEAE8"),
+    "processing":            ("⏳", "#E3A02E", "#FBF3E3"),
+    "creator":               ("👑", "#0F766E", "#FCEAE8"),
+    "member":                ("👤", "#0E3B3A", "#F7FBFA"),
 }
 
 
 def badge_html(status: str) -> str:
     """Return an HTML span badge for the given status."""
-    icon, color, bg = STATUS_BADGE.get(status.lower(), ("•", "#4A6568", "#F7FBFA"))
+    st_low = status.lower()
+    icon, color, bg = STATUS_BADGE.get(st_low, ("•", "#4A6568", "#F7FBFA"))
+    label = "Awaiting Confirm" if st_low in ("paid", "awaiting_confirmation") else status.capitalize()
     return (
         f'<span style="background:{bg}; color:{color}; border:1.2px solid {color}; '
         f'border-radius:20px; padding:3px 10px; font-size:0.8rem; font-weight:700; '
-        f'font-family:\'Plus Jakarta Sans\',sans-serif; display:inline-flex; align-items:center; gap:4px; box-shadow:0 1px 3px rgba(16,39,42,0.04);">'
-        f"{icon} {status.capitalize()}</span>"
+        f'font-family:\'Plus Jakarta Sans\',sans-serif; display:inline-flex; align-items:center; gap:4px; box-shadow:0 1px 3px rgba(16,39,42,0.04); white-space:nowrap;">'
+        f"{icon} {label}</span>"
     )
 
 

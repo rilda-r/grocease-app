@@ -25,6 +25,9 @@ try:
     from database.database import (
         get_room_payments_live,
         settle_payment_live,
+        mark_payment_paid_live,
+        confirm_payment_settled_live,
+        dispute_payment_live,
         remind_payment_live,
     )
 except Exception:
@@ -32,6 +35,12 @@ except Exception:
         return []
     def settle_payment_live(payment_id):
         return False
+    def mark_payment_paid_live(payment_id, payer_user_id):
+        return {}
+    def confirm_payment_settled_live(payment_id, payee_user_id):
+        return {}
+    def dispute_payment_live(payment_id, payee_user_id):
+        return {}
     def remind_payment_live(payment_id, requester_user_id):
         return None
 from mock.mock_api import (
@@ -237,8 +246,29 @@ tab_all, tab_owe, tab_receive, tab_history = st.tabs(
 )
 
 def settle_handler(payment_id):
-    settle_payment(payment_id)
-    st.success("Payment settled!")
+    try:
+        res = mark_payment_paid_live(payment_id, user_id)
+        payee = res.get("payee_name", "the payee")
+        st.toast(f"Marked as paid! Notification sent to {payee} to confirm. 💸", icon="✅")
+    except Exception as exc:
+        st.error(f"Could not mark payment as paid: {safe_error_message(exc)}")
+    st.rerun()
+
+def confirm_handler(payment_id):
+    try:
+        res = confirm_payment_settled_live(payment_id, user_id)
+        payer = res.get("payer_name", "the payer")
+        st.toast(f"Settlement confirmed! Payment from {payer} resolved. 🎉", icon="✅")
+    except Exception as exc:
+        st.error(f"Could not confirm settlement: {safe_error_message(exc)}")
+    st.rerun()
+
+def dispute_handler(payment_id):
+    try:
+        dispute_payment_live(payment_id, user_id)
+        st.toast("Reported as not received. Status reset to pending. ⚠️", icon="⚠️")
+    except Exception as exc:
+        st.error(f"Could not dispute payment: {safe_error_message(exc)}")
     st.rerun()
 
 def remind_handler(payment_id):
@@ -251,16 +281,40 @@ def remind_handler(payment_id):
     except Exception as e:
         st.error(f"Could not send reminder: {safe_error_message(e)}")
 
+def _is_active_debt(p):
+    st_val = (p.get("paymentStatus") or p.get("payment_status") or "pending").lower()
+    return st_val in ("pending", "paid", "awaiting_confirmation")
+
 with tab_all:
-    render_payment_table(payments, user_id, on_settle=settle_handler, on_remind=remind_handler, key_prefix="all")
+    render_payment_table(
+        payments,
+        user_id,
+        on_settle=settle_handler,
+        on_confirm=confirm_handler,
+        on_dispute=dispute_handler,
+        on_remind=remind_handler,
+        key_prefix="all",
+    )
 
 with tab_owe:
-    owe_list = [p for p in payments if _is_payer(p, user_id) and _is_pending(p)]
-    render_payment_table(owe_list, user_id, on_settle=settle_handler, key_prefix="owe")
+    owe_list = [p for p in payments if _is_payer(p, user_id) and _is_active_debt(p)]
+    render_payment_table(
+        owe_list,
+        user_id,
+        on_settle=settle_handler,
+        key_prefix="owe",
+    )
 
 with tab_receive:
-    receive_list = [p for p in payments if _is_payee(p, user_id) and _is_pending(p)]
-    render_payment_table(receive_list, user_id, on_remind=remind_handler, key_prefix="recv")
+    receive_list = [p for p in payments if _is_payee(p, user_id) and _is_active_debt(p)]
+    render_payment_table(
+        receive_list,
+        user_id,
+        on_confirm=confirm_handler,
+        on_dispute=dispute_handler,
+        on_remind=remind_handler,
+        key_prefix="recv",
+    )
 
 with tab_history:
     history = [p for p in payments if (p.get("paymentStatus") or p.get("payment_status")) in ("settled", "reported")]

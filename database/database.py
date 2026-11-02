@@ -666,6 +666,159 @@ def settle_payment_live(payment_id: int) -> bool:
         return False
 
 
+def mark_payment_paid_live(payment_id: int, payer_user_id: int) -> dict:
+    """Payer marks the payment as settled/paid from their side.
+    Sets status to 'paid' and creates an in-app notification for the payee to confirm receipt.
+    """
+    with get_cursor() as cur:
+        pay = query_one(
+            """
+            SELECT p.id, p.room_id, p.payer_user_id, p.payee_user_id, p.amount, p.payment_status,
+                   r.name AS room_name,
+                   COALESCE(NULLIF(pp.nickname, ''), NULLIF(up.nickname, ''), NULLIF(up.username, ''), NULLIF(up.full_name, ''), 'Member') AS payer_name,
+                   COALESCE(NULLIF(pe.nickname, ''), NULLIF(ue.nickname, ''), NULLIF(ue.username, ''), NULLIF(ue.full_name, ''), 'Member') AS payee_name
+            FROM payments p
+            LEFT JOIN rooms r ON r.id = p.room_id
+            LEFT JOIN users up ON up.id = p.payer_user_id
+            LEFT JOIN profiles pp ON pp.user_id = up.id
+            LEFT JOIN users ue ON ue.id = p.payee_user_id
+            LEFT JOIN profiles pe ON pe.user_id = ue.id
+            WHERE p.id = %s
+            """,
+            (int(payment_id),),
+            cur,
+        )
+        if not pay:
+            raise LookupError("Payment not found.")
+        if int(pay["payer_user_id"]) != int(payer_user_id):
+            raise ValueError("Only the payer can mark this payment as settled.")
+        if pay["payment_status"] == "settled":
+            raise ValueError("This payment is already fully settled.")
+
+        execute(
+            "UPDATE payments SET payment_status = 'paid' WHERE id = %s",
+            (pay["id"],),
+            cur,
+        )
+        message = (
+            f"💸 {pay['payer_name']} has settled ₹{float(pay['amount']):,.2f} "
+            f"for the bill in \"{pay['room_name']}\". Please verify and confirm receipt."
+        )
+        execute(
+            """
+            INSERT INTO notifications (user_id, room_id, payment_id, kind, message, is_read, created_at)
+            VALUES (%s, %s, %s, 'payment_settled_by_payer', %s, FALSE, %s)
+            """,
+            (pay["payee_user_id"], pay["room_id"], pay["id"], message, datetime.utcnow()),
+            cur,
+        )
+    return {
+        "payee_user_id": pay["payee_user_id"],
+        "payee_name": pay["payee_name"],
+        "payer_name": pay["payer_name"],
+        "amount": float(pay["amount"]),
+    }
+
+
+def confirm_payment_settled_live(payment_id: int, payee_user_id: int) -> dict:
+    """Payee confirms receipt of the money.
+    Sets status to 'settled', records settled_at, marks settlement notification as read,
+    and sends confirmation notification back to payer.
+    """
+    with get_cursor() as cur:
+        pay = query_one(
+            """
+            SELECT p.id, p.room_id, p.payer_user_id, p.payee_user_id, p.amount, p.payment_status,
+                   r.name AS room_name,
+                   COALESCE(NULLIF(pp.nickname, ''), NULLIF(up.nickname, ''), NULLIF(up.username, ''), NULLIF(up.full_name, ''), 'Member') AS payer_name,
+                   COALESCE(NULLIF(pe.nickname, ''), NULLIF(ue.nickname, ''), NULLIF(ue.username, ''), NULLIF(ue.full_name, ''), 'Member') AS payee_name
+            FROM payments p
+            LEFT JOIN rooms r ON r.id = p.room_id
+            LEFT JOIN users up ON up.id = p.payer_user_id
+            LEFT JOIN profiles pp ON pp.user_id = up.id
+            LEFT JOIN users ue ON ue.id = p.payee_user_id
+            LEFT JOIN profiles pe ON pe.user_id = ue.id
+            WHERE p.id = %s
+            """,
+            (int(payment_id),),
+            cur,
+        )
+        if not pay:
+            raise LookupError("Payment not found.")
+        if int(pay["payee_user_id"]) != int(payee_user_id):
+            raise ValueError("Only the payee who is owed can confirm this settlement.")
+
+        execute(
+            "UPDATE payments SET payment_status = 'settled', settled_at = %s WHERE id = %s",
+            (datetime.utcnow(), pay["id"]),
+            cur,
+        )
+        # Mark payee's unread notifications for this payment as read
+        execute(
+            "UPDATE notifications SET is_read = TRUE WHERE payment_id = %s AND user_id = %s",
+            (pay["id"], int(payee_user_id)),
+            cur,
+        )
+        message = (
+            f"✅ {pay['payee_name']} confirmed receiving your payment of ₹{float(pay['amount']):,.2f} "
+            f"in \"{pay['room_name']}\"."
+        )
+        execute(
+            """
+            INSERT INTO notifications (user_id, room_id, payment_id, kind, message, is_read, created_at)
+            VALUES (%s, %s, %s, 'payment_confirmed_by_payee', %s, FALSE, %s)
+            """,
+            (pay["payer_user_id"], pay["room_id"], pay["id"], message, datetime.utcnow()),
+            cur,
+        )
+    return {
+        "payer_user_id": pay["payer_user_id"],
+        "payer_name": pay["payer_name"],
+        "amount": float(pay["amount"]),
+    }
+
+
+def dispute_payment_live(payment_id: int, payee_user_id: int) -> dict:
+    """Payee reports that they haven't received the money. Resets status to pending and notifies payer."""
+    with get_cursor() as cur:
+        pay = query_one(
+            """
+            SELECT p.id, p.room_id, p.payer_user_id, p.payee_user_id, p.amount,
+                   r.name AS room_name,
+                   COALESCE(NULLIF(pe.nickname, ''), NULLIF(ue.nickname, ''), NULLIF(ue.username, ''), NULLIF(ue.full_name, ''), 'Member') AS payee_name
+            FROM payments p
+            LEFT JOIN rooms r ON r.id = p.room_id
+            LEFT JOIN users ue ON ue.id = p.payee_user_id
+            LEFT JOIN profiles pe ON pe.user_id = ue.id
+            WHERE p.id = %s
+            """,
+            (int(payment_id),),
+            cur,
+        )
+        if not pay or int(pay["payee_user_id"]) != int(payee_user_id):
+            raise ValueError("Only the payee can dispute this payment.")
+
+        execute("UPDATE payments SET payment_status = 'pending' WHERE id = %s", (pay["id"],), cur)
+        execute(
+            "UPDATE notifications SET is_read = TRUE WHERE payment_id = %s AND user_id = %s",
+            (pay["id"], int(payee_user_id)),
+            cur,
+        )
+        message = (
+            f"⚠️ {pay['payee_name']} reported not receiving payment of ₹{float(pay['amount']):,.2f} "
+            f"in \"{pay['room_name']}\". Please verify and resend."
+        )
+        execute(
+            """
+            INSERT INTO notifications (user_id, room_id, payment_id, kind, message, is_read, created_at)
+            VALUES (%s, %s, %s, 'payment_disputed', %s, FALSE, %s)
+            """,
+            (pay["payer_user_id"], pay["room_id"], pay["id"], message, datetime.utcnow()),
+            cur,
+        )
+    return {"payer_user_id": pay["payer_user_id"]}
+
+
 def report_payment_live(payment_id: int) -> bool:
     """Mark a payment as reported in Supabase PostgreSQL."""
     try:
