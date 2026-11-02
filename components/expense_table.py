@@ -1,8 +1,8 @@
 """
 components/expense_table.py
 ===========================
-Personal expense list table component.
-Shared Kitchen Counter aesthetic design.
+Personal expense list component.
+Minimalistic, responsive card design for seamless mobile & desktop views.
 """
 
 import streamlit as st
@@ -11,11 +11,7 @@ from utils.formatting import format_currency, format_date, badge_html
 
 def render_expense_table(expenses: list, on_delete=None):
     """
-    Render personal expenses as an interactive table.
-
-    Args:
-        expenses: list of PersonalExpense dicts
-        on_delete: optional callback(expense_id)
+    Render personal expenses in a clean, responsive card layout.
     """
     if not expenses:
         st.markdown(
@@ -31,18 +27,42 @@ def render_expense_table(expenses: list, on_delete=None):
         )
         return
 
-    # Header
-    header_cols = st.columns([2, 2, 2, 3, 1])
-    for col, h in zip(header_cols, ["Date", "Category", "Amount", "Description", "Delete"]):
-        col.markdown(f"<span style='font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9A6A12;'>{h}</span>", unsafe_allow_html=True)
-    st.markdown("<hr style='margin:0.4rem 0 0.8rem 0; border:none; border-top:1.5px solid #CADDD8;'>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='font-size:0.85rem; font-weight:700; color:#4A6568; margin-bottom:0.6rem; text-transform:uppercase; letter-spacing:0.05em;'>"
+        f"Recorded Expenses ({len(expenses)})"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
 
-    for exp in sorted(expenses, key=lambda e: e["expenseDate"], reverse=True):
-        row = st.columns([2, 2, 2, 3, 1])
-        row[0].write(format_date(exp["expenseDate"]))
-        row[1].markdown(badge_html(exp["category"].lower()) if exp["category"] else "—", unsafe_allow_html=True)
-        row[2].markdown(f"<span class='money-tabular'>{format_currency(exp['amount'])}</span>", unsafe_allow_html=True)
-        row[3].write(exp.get("description") or "—")
-        with row[4]:
-            if on_delete and st.button("🗑️", key=f"del_exp_{exp['id']}"):
-                on_delete(exp["id"])
+    for exp in sorted(expenses, key=lambda e: str(e.get("expenseDate") or e.get("expense_date") or ""), reverse=True):
+        exp_id = exp.get("id")
+        amt = float(exp.get("amount", 0.0))
+        cat = (exp.get("category") or "General").capitalize()
+        desc = exp.get("description") or "—"
+        dt = format_date(exp.get("expenseDate") or exp.get("expense_date"))
+
+        with st.container(border=True):
+            col_main, col_right = st.columns([3.5, 1.5], vertical_alignment="center")
+            with col_main:
+                st.markdown(
+                    f"""
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:1.02rem; font-weight:700; color:#10272A;">📝 {cat}</span>
+                        {badge_html(cat.lower())}
+                    </div>
+                    <div style="font-size:0.82rem; color:#4A6568; margin-top:3px;">
+                        <span>{desc}</span> &nbsp;•&nbsp; <span style="color:#0F766E; font-weight:600;">📅 {dt}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with col_right:
+                col_amt, col_del = st.columns([2.5, 1], vertical_alignment="center")
+                with col_amt:
+                    st.markdown(
+                        f"<div style='font-size:1.05rem; font-weight:800; color:#0F766E; text-align:right;'>{format_currency(amt)}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with col_del:
+                    if on_delete and st.button("🗑️", key=f"del_exp_{exp_id}", help="Delete expense", use_container_width=True):
+                        on_delete(exp_id)

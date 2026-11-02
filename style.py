@@ -495,6 +495,24 @@ div[data-testid="stAlert"]:has([data-testid="stNotificationContentError"]) {{
     box-sizing: border-box !important;
     vertical-align: middle !important;
 }}
+
+/* Mobile responsive enhancements */
+@media (max-width: 640px) {{
+    .block-container {{
+        padding-top: 1rem !important;
+        padding-bottom: 2rem !important;
+        padding-left: 0.65rem !important;
+        padding-right: 0.65rem !important;
+    }}
+    div[data-testid="stVerticalBlockBorderWrapper"] > div {{
+        padding: 0.75rem 0.85rem !important;
+        border-radius: 14px !important;
+    }}
+    .stButton > button {{
+        padding: 0.42rem 0.75rem !important;
+        font-size: 0.86rem !important;
+    }}
+}}
 </style>
 """
 

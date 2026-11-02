@@ -49,9 +49,15 @@ username = get_username()
 # ── Dev mode banner ───────────────────────────────────────────────────────────
 render_dev_mode_banner()
 
-# ── Page title ────────────────────────────────────────────────────────────────
-st.markdown(f"# 📊 Dashboard")
-st.markdown(f"<p style='color:#4A6568; margin-top:-0.8rem;'>Welcome back, <strong>{username}</strong>!</p>", unsafe_allow_html=True)
+# ── Page title & Top Refresh ──────────────────────────────────────────────────
+col_dash_title, col_dash_ref = st.columns([4.2, 1.2], vertical_alignment="center")
+with col_dash_title:
+    st.markdown("# 📊 Dashboard")
+    st.markdown(f"<p style='color:#4A6568; margin-top:-0.8rem;'>Welcome back, <strong>{username}</strong>!</p>", unsafe_allow_html=True)
+with col_dash_ref:
+    if st.button("🔄 Sync", key="dash_top_sync_btn", help="Sync latest dashboard metrics", use_container_width=True):
+        st.toast("Dashboard refreshed! ✨", icon="🔄")
+        st.rerun()
 st.markdown("<hr style='border-color:#CADDD8; margin:0.5rem 0 1.5rem 0;'>", unsafe_allow_html=True)
 
 # ── Notifications (e.g. payment reminders) ────────────────────────────────────

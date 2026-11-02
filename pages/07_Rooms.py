@@ -50,8 +50,14 @@ render_sidebar()
 
 user_id = get_current_user_id()
 
-st.markdown("# 🏠 Rooms")
-st.markdown("<p style='color:#4A6568; margin-top:-0.8rem;'>Create and manage shared spaces for your grocery groups.</p>", unsafe_allow_html=True)
+col_rooms_title, col_rooms_ref = st.columns([4.2, 1.2], vertical_alignment="center")
+with col_rooms_title:
+    st.markdown("# 🏠 Rooms")
+    st.markdown("<p style='color:#4A6568; margin-top:-0.8rem;'>Create and manage shared spaces for your grocery groups.</p>", unsafe_allow_html=True)
+with col_rooms_ref:
+    if st.button("🔄 Sync", key="rooms_top_sync_btn", help="Sync latest rooms", use_container_width=True):
+        st.toast("Rooms refreshed! ✨", icon="🔄")
+        st.rerun()
 st.markdown("<hr style='border-color:#CADDD8; margin:0.5rem 0 1.5rem 0;'>", unsafe_allow_html=True)
 
 # ── Create / Join tabs ────────────────────────────────────────────────────────

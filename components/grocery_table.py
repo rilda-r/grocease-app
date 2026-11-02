@@ -2,7 +2,7 @@
 components/grocery_table.py
 ===========================
 Grocery list table component.
-Shared Kitchen Counter aesthetic design.
+Minimalistic, responsive card design for seamless mobile & desktop views.
 """
 
 import streamlit as st
@@ -17,13 +17,7 @@ def render_grocery_table(
     on_delete=None,
 ):
     """
-    Render the grocery items as an interactive table.
-
-    Args:
-        items: list of GroceryItem dicts
-        current_user_id: logged-in user's id (for permission checks)
-        on_edit: optional callback(item) for edit action
-        on_delete: optional callback(item_id) for delete action
+    Render grocery items in a clean, responsive card layout.
     """
     if not items:
         st.markdown(
@@ -39,39 +33,51 @@ def render_grocery_table(
         )
         return
 
-    # Header row
-    cols = st.columns([3, 1, 2, 2, 1, 1])
-    for col, header in zip(cols, ["Item", "Qty", "Added By", "Status", "Edit", "Delete"]):
-        col.markdown(f"<span style='font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9A6A12;'>{header}</span>", unsafe_allow_html=True)
-    st.markdown("<hr style='margin:0.4rem 0 0.8rem 0; border:none; border-top:1.5px solid #CADDD8;'>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='font-size:0.85rem; font-weight:700; color:#4A6568; margin-bottom:0.6rem; text-transform:uppercase; letter-spacing:0.05em;'>"
+        f"Items in list ({len(items)})"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
 
     for item in items:
-        cols = st.columns([3, 1, 2, 2, 1, 1])
-        cols[0].write(item["itemName"])
-        cols[1].write(str(item["quantity"]))
-        
-        # Display nickname / username attribution
-        added_by_display = item.get("addedByName") or item.get("added_by_name") or get_username(item["userId"])
-        cols[2].write(added_by_display)
-        cols[3].markdown(badge_html(item["status"]), unsafe_allow_html=True)
+        item_id = item["id"]
+        item_name = item.get("itemName") or item.get("item_name", "Item")
+        qty = item.get("quantity", 1)
+        user_uid = item.get("userId") if item.get("userId") is not None else item.get("user_id")
+        added_by_display = item.get("addedByName") or item.get("added_by_name") or get_username(user_uid)
+        status = item.get("status", "pending")
 
-        is_owner = item["userId"] == current_user_id
-        is_purchased = item.get("status") == "purchased"
+        is_owner = user_uid is not None and int(user_uid) == int(current_user_id)
+        is_purchased = status == "purchased"
 
-        with cols[4]:
-            if is_purchased:
-                st.markdown("<span title='Purchased items cannot be edited' style='color:#4A6568; font-size:0.95rem; cursor:not-allowed;'>🔒</span>", unsafe_allow_html=True)
-            elif is_owner and on_edit:
-                if st.button("✏️", key=f"edit_item_{item['id']}"):
-                    on_edit(item)
-            else:
-                st.markdown("—")
+        with st.container(border=True):
+            col_info, col_actions = st.columns([4, 1.2], vertical_alignment="center")
+            with col_info:
+                st.markdown(
+                    f"""
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:1.05rem; font-weight:700; color:#10272A;">🛒 {item_name}</span>
+                        <span style="background:#E6F4F1; color:#0F766E; font-weight:700; font-size:0.82rem; padding:2px 8px; border-radius:10px;">×{qty}</span>
+                        {badge_html(status)}
+                    </div>
+                    <div style="font-size:0.8rem; color:#4A6568; margin-top:3px;">
+                        👤 Added by <strong style="color:#10272A;">{added_by_display}</strong>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-        with cols[5]:
-            if is_purchased:
-                st.markdown("<span title='Purchased items cannot be deleted to protect purchase logs' style='color:#4A6568; font-size:0.95rem; cursor:not-allowed;'>🔒</span>", unsafe_allow_html=True)
-            elif is_owner and on_delete:
-                if st.button("🗑️", key=f"del_item_{item['id']}"):
-                    on_delete(item["id"])
-            else:
-                st.markdown("—")
+            with col_actions:
+                if is_purchased:
+                    st.markdown("<div style='text-align:right; font-size:0.8rem; color:#4A6568;'>🔒 Purchased</div>", unsafe_allow_html=True)
+                elif is_owner:
+                    c_edit, c_del = st.columns(2)
+                    with c_edit:
+                        if on_edit and st.button("✏️", key=f"edit_item_{item_id}", help="Edit item", use_container_width=True):
+                            on_edit(item)
+                    with c_del:
+                        if on_delete and st.button("🗑️", key=f"del_item_{item_id}", help="Delete item", use_container_width=True):
+                            on_delete(item_id)
+                else:
+                    st.write("")

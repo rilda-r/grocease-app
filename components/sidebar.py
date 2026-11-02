@@ -6,9 +6,9 @@ GrocEase sidebar navigation component.
 Renders the branded sidebar with:
 - Browser-style Back and Forward navigation controls
 - Logo / user greeting
-- Interactive joined room switcher dropdown
+- Interactive joined room switcher dropdown with quick sync button
 - Page navigation links
-- Logout button
+- Minimalist sync and logout actions
 
 Usage:
     from components.sidebar import render_sidebar, render_room_selector
@@ -99,56 +99,54 @@ _SIDEBAR_CSS = """
     margin-bottom: 0.3rem;
     box-shadow: 0 3px 8px rgba(0,0,0,0.18);
 }
-.sb-user-chip * {
-    color: #0E3B3A !important;
-}
 
 /* Nav links in sidebar (warm wood pill items with micro-interactions) */
 [data-testid="stSidebar"] [data-testid="stPageLink"] {
-    margin-bottom: 4px !important;
+    margin-bottom: 0.35rem;
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a,
 [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(227, 214, 190, 0.12) !important;
+    border-radius: 14px !important;
+    padding: 0.65rem 0.95rem !important;
     color: #EEF5F3 !important;
+    font-weight: 600 !important;
     font-size: 0.92rem !important;
-    font-weight: 500 !important;
-    padding: 8px 14px !important;
-    display: flex !important;
-    align-items: center !important;
-    text-decoration: none !important;
-    border-radius: 12px !important;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a p,
 [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] p {
     color: #EEF5F3 !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     margin: 0 !important;
-    transition: color 0.15s ease !important;
+    letter-spacing: 0.01em;
 }
+
+/* Active / Hover Micro-interactions */
 [data-testid="stSidebar"] [data-testid="stPageLink"] a:hover,
 [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover {
-    background-color: #14504D !important;
-    transform: translateX(4px) !important;
+    background-color: rgba(15, 118, 110, 0.35) !important;
+    border-color: #0F766E !important;
+    transform: translateX(4px);
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a:hover p,
 [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover p {
     color: #FFFFFF !important;
-    font-weight: 600 !important;
 }
 
-/* Sidebar action buttons (e.g. Logout) */
+/* Sidebar action buttons (e.g. Sync, Logout) */
 [data-testid="stSidebar"] .stButton > button {
-    background-color: rgba(251, 246, 236, 0.08) !important;
-    color: #EEF5F3 !important;
-    border: 1.5px solid rgba(227, 214, 190, 0.35) !important;
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(227, 214, 190, 0.22) !important;
     border-radius: 12px !important;
-    font-size: 0.88rem !important;
-    font-weight: 600 !important;
-    padding: 0.55rem 1rem !important;
-    width: 100%;
+    color: #F7FBFA !important;
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 0.48rem 0.85rem;
     text-align: center;
-    margin-top: 0.5rem;
+    margin-top: 0.3rem;
     box-shadow: none !important;
     transition: all 0.2s ease !important;
 }
@@ -172,10 +170,10 @@ def _get_available_rooms(user_id: int) -> list:
         return []
 
 
-def render_room_selector(key_prefix: str = "global"):
+def render_room_selector(key_prefix: str = "global", show_refresh: bool = True):
     """
-    Renders an interactive, universal Room Selection dropdown anywhere on a page.
-    Automatically keeps active room in sync across pages.
+    Renders an interactive, universal Room Selection dropdown anywhere on a page
+    with a minimalistic, inline quick-refresh button.
     """
     user_id = get_current_user_id()
     rooms = _get_available_rooms(user_id)
@@ -198,12 +196,26 @@ def render_room_selector(key_prefix: str = "global"):
         set_current_room(first_r["id"], first_r["name"])
         cur_idx = 0
 
-    selected_label = st.selectbox(
-        "🏠 Active Room",
-        options=options,
-        index=cur_idx,
-        key=f"{key_prefix}_room_dropdown",
-    )
+    if show_refresh:
+        col_sel, col_ref = st.columns([4.2, 1.2], vertical_alignment="bottom")
+        with col_sel:
+            selected_label = st.selectbox(
+                "🏠 Active Room",
+                options=options,
+                index=cur_idx,
+                key=f"{key_prefix}_room_dropdown",
+            )
+        with col_ref:
+            if st.button("🔄 Sync", key=f"{key_prefix}_top_sync_btn", help="Sync latest room data", use_container_width=True):
+                st.toast("Data refreshed! ✨", icon="🔄")
+                st.rerun()
+    else:
+        selected_label = st.selectbox(
+            "🏠 Active Room",
+            options=options,
+            index=cur_idx,
+            key=f"{key_prefix}_room_dropdown",
+        )
 
     selected_room = room_map[selected_label]
     if selected_room["id"] != get_current_room_id():
@@ -245,6 +257,11 @@ def render_sidebar():
 
         st.markdown('<hr class="sb-divider">', unsafe_allow_html=True)
 
-        # ── Logout ────────────────────────────────────
-        if st.button("🚪  Logout", key="sidebar_logout_btn"):
+        # ── Minimalist Actions ────────────────────────
+        st.markdown('<div class="sb-section-label">Actions</div>', unsafe_allow_html=True)
+        if st.button("🔄  Sync & Refresh", key="sb_sync_btn", use_container_width=True, help="Fetch latest updates"):
+            st.toast("Data synchronized! ✨", icon="🔄")
+            st.rerun()
+
+        if st.button("🚪  Logout", key="sidebar_logout_btn", use_container_width=True):
             st.switch_page("pages/05_Logout.py")

@@ -44,11 +44,17 @@ render_sidebar()
 user_id  = get_current_user_id()
 username = get_username()
 
-st.markdown("# 📝 Personal Expenses")
-st.markdown(
-    f"<p style='color:#4A6568; margin-top:-0.8rem;'>Your private expense log — only visible to you, <strong>{username}</strong>.</p>",
-    unsafe_allow_html=True,
-)
+col_exp_title, col_exp_ref = st.columns([4.2, 1.2], vertical_alignment="center")
+with col_exp_title:
+    st.markdown("# 📝 Personal Expenses")
+    st.markdown(
+        f"<p style='color:#4A6568; margin-top:-0.8rem;'>Your private expense log — only visible to you, <strong>{username}</strong>.</p>",
+        unsafe_allow_html=True,
+    )
+with col_exp_ref:
+    if st.button("🔄 Sync", key="exp_top_sync_btn", help="Sync latest expenses", use_container_width=True):
+        st.toast("Expenses refreshed! ✨", icon="🔄")
+        st.rerun()
 st.markdown("<hr style='border-color:#CADDD8; margin:0.5rem 0 1.5rem 0;'>", unsafe_allow_html=True)
 
 
