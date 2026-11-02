@@ -698,67 +698,77 @@ elif step == 4:
         is_already_confirmed = st.session_state.get("confirmed_receipt_id") is not None
         button_disabled = st.session_state["is_submitting"] or is_already_confirmed
 
-        if st.button("✅ Confirm & Split Expense", type="primary", disabled=button_disabled):
-            st.session_state["is_submitting"] = True
-            
-            # Collect matched grocery items to mark purchased
-            purchased_g_ids = []
-            all_line_items = []
-
-            for m_item in matched_items:
-                for a in m_item.get("assignments", []):
-                    if a.get("grocery_item_id"):
-                        purchased_g_ids.append(a["grocery_item_id"])
-
-                all_line_items.append({
-                    "name": m_item["name"],
-                    "quantity": m_item["receipt_quantity"],
-                    "unit_price": m_item["unit_price"],
-                    "line_total": m_item["line_total"],
-                    "matched_grocery_item_id": m_item["assignments"][0].get("grocery_item_id") if m_item["assignments"] else None,
-                    "is_extra": False,
-                    "assignments": m_item["assignments"],
-                })
-
-            for e_item in extra_items:
-                all_line_items.append({
-                    "name": e_item["name"],
-                    "quantity": e_item["quantity"],
-                    "unit_price": e_item["unit_price"],
-                    "line_total": e_item["line_total"],
-                    "matched_grocery_item_id": None,
-                    "is_extra": True,
-                    "assignments": e_item["assignments"],
-                })
-
-            try:
-                with st.spinner("💾 Committing receipt, grocery status, and debts atomically..."):
-                    result = confirm_receipt_transaction(
-                        room_id=room_id,
-                        uploaded_by=user_id,
-                        store=scan["store"],
-                        receipt_date=scan["date"],
-                        subtotal=scan["subtotal"],
-                        tax=scan["tax"],
-                        discount=scan["discount"],
-                        other_charges=scan["other_charges"],
-                        total=scan["total"],
-                        image_path=scan["image_path"],
-                        items=all_line_items,
-                        payments=debts,
-                        purchased_grocery_ids=purchased_g_ids,
-                    )
-
-                st.session_state["confirmed_receipt_id"] = result.get("receipt_id")
-                st.session_state["is_submitting"] = False
-                st.success(f"🎉 Receipt #{result.get('receipt_id')} saved and expenses recorded successfully!")
-                
-                # Navigate to Payments page
-                st.balloons()
-                if st.button("💳 View Updated Debts on Payments Page", type="primary"):
+        if is_already_confirmed:
+            st.success(f"🎉 Receipt #{st.session_state['confirmed_receipt_id']} saved and expenses recorded successfully!")
+            c_pay, c_new = st.columns([1.5, 1])
+            with c_pay:
+                if st.button("💳 View Updated Debts on Payments Page", type="primary", key="goto_payments_btn", use_container_width=True):
                     st.session_state["scan_data"] = None
                     st.session_state["scan_step"] = 1
+                    st.session_state["confirmed_receipt_id"] = None
                     st.switch_page("pages/11_Payments.py")
-            except Exception as exc:
-                st.session_state["is_submitting"] = False
-                st.error(f"❌ Failed to confirm receipt: {safe_error_message(exc)}")
+            with c_new:
+                if st.button("➕ Scan Another Receipt", key="scan_another_btn", use_container_width=True):
+                    st.session_state["scan_data"] = None
+                    st.session_state["scan_step"] = 1
+                    st.session_state["confirmed_receipt_id"] = None
+                    st.rerun()
+        else:
+            if st.button("✅ Confirm & Split Expense", type="primary", disabled=button_disabled):
+                st.session_state["is_submitting"] = True
+                
+                # Collect matched grocery items to mark purchased
+                purchased_g_ids = []
+                all_line_items = []
+
+                for m_item in matched_items:
+                    for a in m_item.get("assignments", []):
+                        if a.get("grocery_item_id"):
+                            purchased_g_ids.append(a["grocery_item_id"])
+
+                    all_line_items.append({
+                        "name": m_item["name"],
+                        "quantity": m_item["receipt_quantity"],
+                        "unit_price": m_item["unit_price"],
+                        "line_total": m_item["line_total"],
+                        "matched_grocery_item_id": m_item["assignments"][0].get("grocery_item_id") if m_item["assignments"] else None,
+                        "is_extra": False,
+                        "assignments": m_item["assignments"],
+                    })
+
+                for e_item in extra_items:
+                    all_line_items.append({
+                        "name": e_item["name"],
+                        "quantity": e_item["quantity"],
+                        "unit_price": e_item["unit_price"],
+                        "line_total": e_item["line_total"],
+                        "matched_grocery_item_id": None,
+                        "is_extra": True,
+                        "assignments": e_item["assignments"],
+                    })
+
+                try:
+                    with st.spinner("💾 Committing receipt, grocery status, and debts atomically..."):
+                        result = confirm_receipt_transaction(
+                            room_id=room_id,
+                            uploaded_by=user_id,
+                            store=scan["store"],
+                            receipt_date=scan["date"],
+                            subtotal=scan["subtotal"],
+                            tax=scan["tax"],
+                            discount=scan["discount"],
+                            other_charges=scan["other_charges"],
+                            total=scan["total"],
+                            image_path=scan["image_path"],
+                            items=all_line_items,
+                            payments=debts,
+                            purchased_grocery_ids=purchased_g_ids,
+                        )
+
+                    st.session_state["confirmed_receipt_id"] = result.get("receipt_id")
+                    st.session_state["is_submitting"] = False
+                    st.balloons()
+                    st.rerun()
+                except Exception as exc:
+                    st.session_state["is_submitting"] = False
+                    st.error(f"❌ Failed to confirm receipt: {safe_error_message(exc)}")
