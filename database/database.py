@@ -156,10 +156,18 @@ def update_nickname(user_id: int, nickname: str) -> bool:
         pass
 
     # Update users table
-    execute(
-        "UPDATE users SET nickname = %s, username = %s WHERE id = %s",
-        (nick, nick, int(user_id)),
-    )
+    # If the nickname is already taken as a unique username by another account,
+    # update only the nickname column to avoid UniqueViolation on uq_users_username.
+    try:
+        execute(
+            "UPDATE users SET nickname = %s, username = %s WHERE id = %s",
+            (nick, nick, int(user_id)),
+        )
+    except Exception:
+        execute(
+            "UPDATE users SET nickname = %s WHERE id = %s",
+            (nick, int(user_id)),
+        )
     return True
 
 

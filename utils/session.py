@@ -130,12 +130,16 @@ def enforce_nickname_onboarding():
                     if len(cleaned) < 2 or len(cleaned) > 30:
                         st.error("Nickname must be between 2 and 30 characters.")
                     else:
-                        update_nickname(user_id, cleaned)
-                        st.session_state["nickname"] = cleaned
-                        st.session_state["username"] = cleaned
-                        st.session_state["user_name"] = cleaned
-                        st.success(f"Welcome, {cleaned}!")
-                        st.rerun()
+                        try:
+                            update_nickname(user_id, cleaned)
+                            st.session_state["nickname"] = cleaned
+                            st.session_state["username"] = cleaned
+                            st.session_state["user_name"] = cleaned
+                            st.success(f"Welcome, {cleaned}!")
+                            st.rerun()
+                        except Exception as exc:
+                            from utils.formatting import safe_error_message
+                            st.error(f"Could not save nickname: {safe_error_message(exc)}")
 
         st.stop()
 

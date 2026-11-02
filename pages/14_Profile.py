@@ -123,12 +123,15 @@ with right_col:
             if len(cleaned_nick) < 2 or len(cleaned_nick) > 30:
                 st.error("Nickname must be between 2 and 30 characters.")
             else:
-                update_nickname(user_id, cleaned_nick)
-                st.session_state["nickname"] = cleaned_nick
-                st.session_state["username"] = cleaned_nick
-                st.session_state["user_name"] = cleaned_nick
-                st.success(f"✅ Nickname updated to **{cleaned_nick}**!")
-                st.rerun()
+                try:
+                    update_nickname(user_id, cleaned_nick)
+                    st.session_state["nickname"] = cleaned_nick
+                    st.session_state["username"] = cleaned_nick
+                    st.session_state["user_name"] = cleaned_nick
+                    st.success(f"✅ Nickname updated to **{cleaned_nick}**!")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"Could not update nickname: {safe_error_message(exc)}")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
