@@ -19,6 +19,9 @@ from utils.formatting import format_currency, format_datetime, badge_html, safe_
 from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar, render_room_selector
 from components.cards import render_metric_card, render_empty_state
+import importlib
+import components.payment_table
+importlib.reload(components.payment_table)
 from components.payment_table import render_payment_table
 from components.notifications import render_notification_banner
 try:
@@ -301,36 +304,48 @@ def _is_active_debt(p):
     return st_val in ("pending", "paid", "awaiting_confirmation")
 
 with tab_all:
-    render_payment_table(
-        payments,
-        user_id,
-        on_settle=settle_handler,
-        on_confirm=confirm_handler,
-        on_dispute=dispute_handler,
-        on_remind=remind_handler,
-        key_prefix="all",
-    )
+    try:
+        render_payment_table(
+            payments,
+            user_id,
+            on_settle=settle_handler,
+            on_confirm=confirm_handler,
+            on_dispute=dispute_handler,
+            on_remind=remind_handler,
+            key_prefix="all",
+        )
+    except Exception as exc:
+        st.error(f"Could not render payments: {safe_error_message(exc)}")
 
 with tab_owe:
-    owe_list = [p for p in payments if _is_payer(p, user_id) and _is_active_debt(p)]
-    render_payment_table(
-        owe_list,
-        user_id,
-        on_settle=settle_handler,
-        key_prefix="owe",
-    )
+    try:
+        owe_list = [p for p in payments if _is_payer(p, user_id) and _is_active_debt(p)]
+        render_payment_table(
+            owe_list,
+            user_id,
+            on_settle=settle_handler,
+            key_prefix="owe",
+        )
+    except Exception as exc:
+        st.error(f"Could not render owed debts: {safe_error_message(exc)}")
 
 with tab_receive:
-    receive_list = [p for p in payments if _is_payee(p, user_id) and _is_active_debt(p)]
-    render_payment_table(
-        receive_list,
-        user_id,
-        on_confirm=confirm_handler,
-        on_dispute=dispute_handler,
-        on_remind=remind_handler,
-        key_prefix="recv",
-    )
+    try:
+        receive_list = [p for p in payments if _is_payee(p, user_id) and _is_active_debt(p)]
+        render_payment_table(
+            receive_list,
+            user_id,
+            on_confirm=confirm_handler,
+            on_dispute=dispute_handler,
+            on_remind=remind_handler,
+            key_prefix="recv",
+        )
+    except Exception as exc:
+        st.error(f"Could not render receivable debts: {safe_error_message(exc)}")
 
 with tab_history:
-    history = [p for p in payments if (p.get("paymentStatus") or p.get("payment_status")) in ("settled", "reported")]
-    render_payment_table(history, user_id, key_prefix="hist")
+    try:
+        history = [p for p in payments if (p.get("paymentStatus") or p.get("payment_status")) in ("settled", "reported")]
+        render_payment_table(history, user_id, key_prefix="hist")
+    except Exception as exc:
+        st.error(f"Could not render payment history: {safe_error_message(exc)}")
