@@ -97,7 +97,7 @@ def render_payment_table(*args, **kwargs):
 
             st.markdown('<div class="groc-card-row">', unsafe_allow_html=True)
             with st.container(border=True):
-                col_info, col_amt, col_action = st.columns([3.2, 1.4, 1.4], vertical_alignment="center")
+                col_info, col_amt, col_action = st.columns([3.0, 1.2, 1.8], vertical_alignment="center")
                 with col_info:
                     st.markdown(
                         f"""
@@ -130,8 +130,15 @@ def render_payment_table(*args, **kwargs):
                             st.markdown(f"<div style='text-align:right;'>{badge_html('pending')}</div>", unsafe_allow_html=True)
                     elif status in ("paid", "awaiting_confirmation"):
                         if is_payee and on_confirm:
-                            if st.button("✅ Confirm", key=f"{key_prefix}_confirm_{p_id}", type="primary", use_container_width=True, help="Confirm money received in your account"):
-                                on_confirm(p_id)
+                            col_c1, col_c2 = st.columns([1.1, 0.9], gap="small")
+                            with col_c1:
+                                if st.button("✅ Confirm", key=f"{key_prefix}_confirm_{p_id}", type="primary", use_container_width=True, help="Confirm money received in your account"):
+                                    on_confirm(p_id)
+                            with col_c2:
+                                if on_dispute and st.button("❌ No", key=f"{key_prefix}_dispute_{p_id}", use_container_width=True, help="Payment not received; resets status to pending"):
+                                    on_dispute(p_id)
+                        elif is_payer:
+                            st.markdown(f"<div style='text-align:right;'>{badge_html('awaiting_confirmation')}</div>", unsafe_allow_html=True)
                         else:
                             st.markdown(f"<div style='text-align:right;'>{badge_html('awaiting_confirmation')}</div>", unsafe_allow_html=True)
                     elif status == "settled":

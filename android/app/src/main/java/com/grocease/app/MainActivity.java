@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
     private Button btnRetry;
 
     private ValueCallback<Uri[]> filePathCallback;
-    private Uri cameraImageUri;
 
     private final ActivityResultLauncher<Intent> fileChooserLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -60,19 +59,16 @@ public class MainActivity extends AppCompatActivity {
                     Intent data = result.getData();
                     if (data != null && data.getData() != null) {
                         results = new Uri[]{data.getData()};
-                    } else if (cameraImageUri != null) {
-                        results = new Uri[]{cameraImageUri};
+                    } else if (data != null && data.getClipData() != null) {
+                        int count = data.getClipData().getItemCount();
+                        results = new Uri[count];
+                        for (int i = 0; i < count; i++) {
+                            results[i] = data.getClipData().getItemAt(i).getUri();
+                        }
                     }
                 }
                 filePathCallback.onReceiveValue(results);
                 filePathCallback = null;
-            });
-
-    private final ActivityResultLauncher<String> requestCameraPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (!isGranted) {
-                    Toast.makeText(this, "Camera permission is needed for receipt scanning", Toast.LENGTH_SHORT).show();
-                }
             });
 
     @Override
@@ -90,18 +86,10 @@ public class MainActivity extends AppCompatActivity {
         setupListeners();
         setupBackNavigation();
 
-        checkPermissions();
-
         if (savedInstanceState == null) {
             webView.loadUrl(APP_URL);
         } else {
             webView.restoreState(savedInstanceState);
-        }
-    }
-
-    private void checkPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
         }
     }
 
@@ -223,42 +211,18 @@ public class MainActivity extends AppCompatActivity {
                 }
                 MainActivity.this.filePathCallback = filePathCallback;
 
-                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                File photoFile = null;
                 try {
-                    photoFile = createImageFile();
-                } catch (IOException ex) {
-                    // Ignore
+                    Intent intent = fileChooserParams.createIntent();
+                    fileChooserLauncher.launch(intent);
+                } catch (Exception e) {
+                    Intent fallback = new Intent(Intent.ACTION_GET_CONTENT);
+                    fallback.addCategory(Intent.CATEGORY_OPENABLE);
+                    fallback.setType("*/*");
+                    fileChooserLauncher.launch(Intent.createChooser(fallback, "Select Receipt File"));
                 }
-
-                if (photoFile != null) {
-                    cameraImageUri = FileProvider.getUriForFile(
-                            MainActivity.this,
-                            getApplicationContext().getPackageName() + ".fileprovider",
-                            photoFile
-                    );
-                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
-                }
-
-                Intent contentSelectionIntent = fileChooserParams.createIntent();
-                Intent[] intentArray = (photoFile != null) ? new Intent[]{takePictureIntent} : new Intent[0];
-
-                Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-                chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
-                chooserIntent.putExtra(Intent.EXTRA_TITLE, "Select Receipt or Image");
-                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
-
-                fileChooserLauncher.launch(chooserIntent);
                 return true;
             }
         });
-    }
-
-    private File createImageFile() throws IOException {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String imageFileName = "RECEIPT_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        return File.createTempFile(imageFileName, ".jpg", storageDir);
     }
 
     private void setupListeners() {

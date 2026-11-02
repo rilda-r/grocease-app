@@ -44,8 +44,8 @@ jobs:
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.2
-          name: "GrocEase Standalone App v1.0.2"
-          body: "Official Android APK for GrocEase — Standalone App with disabled pull-to-refresh to prevent accidental reloads while scrolling."
+          tag_name: v1.0.3
+          name: "GrocEase Standalone App v1.0.3"
+          body: "Official Android APK for GrocEase — Standalone App with clean native file/gallery picker (camera prompt removed) and two-way payment settlement confirmation."
           make_latest: true
           files: android/app/build/outputs/apk/debug/grocease.apk
