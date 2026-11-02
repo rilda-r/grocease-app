@@ -220,6 +220,22 @@ def _migrate_users_table(cursor) -> None:
         "ALTER TABLE bill_items ADD COLUMN IF NOT EXISTS sgst DECIMAL(10,2) NOT NULL DEFAULT 0.00",
         # payments: optional receipt_id link
         "ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_id INT NULL",
+        # payments: when the payee last sent a "remind" nudge
+        "ALTER TABLE payments ADD COLUMN IF NOT EXISTS last_reminded_at TIMESTAMP NULL",
+        # in-app notifications (payment reminders, etc.)
+        """CREATE TABLE IF NOT EXISTS notifications (
+            id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL,
+            room_id INT NULL,
+            payment_id INT NULL,
+            kind VARCHAR(30) NOT NULL DEFAULT 'general',
+            message VARCHAR(500) NOT NULL,
+            is_read BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+            CONSTRAINT fk_notifications_payment FOREIGN KEY (payment_id) REFERENCES payments (id) ON DELETE CASCADE
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications (user_id, is_read)",
     ]
 
     for m in migrations:

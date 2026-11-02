@@ -1,7 +1,7 @@
 """
 pages/11_Payments.py
 ====================
-Payments page — view payment obligations, settle payments, report issues,
+Payments page — view payment obligations, settle payments, remind payers,
 and view payment history. Also shows expense split preview from bill scanning.
 """
 
@@ -13,19 +13,20 @@ import streamlit as st
 
 from style import apply_base_style
 from utils.session import require_auth, get_current_user_id, get_current_room_id, get_current_room_name
-from utils.formatting import format_currency, format_datetime, badge_html
+from utils.formatting import format_currency, format_datetime, badge_html, safe_error_message
 from components.sidebar import render_sidebar, render_room_selector
 from components.cards import render_metric_card, render_empty_state
 from components.payment_table import render_payment_table
+from components.notifications import render_notification_banner
 from database.database import (
     get_room_payments_live,
     settle_payment_live,
-    report_payment_live,
+    remind_payment_live,
 )
 from mock.mock_api import (
     get_payments as mock_get_payments,
     settle_payment as mock_settle_payment,
-    report_payment as mock_report_payment,
+    remind_payment as mock_remind_payment,
     get_bill,
     get_bill_items,
     calculate_bill_split,
@@ -46,11 +47,19 @@ def settle_payment(payment_id):
     except Exception:
         mock_settle_payment(payment_id)
 
-def report_payment(payment_id):
+def remind_payment(payment_id, requester_user_id):
+    """Send a reminder to the payer. Returns {"payer_name": ...}.
+
+    Raises ValueError for rule violations (not the payee / not pending).
+    Falls back to the mock store only when the payment is not in the live DB.
+    """
     try:
-        report_payment_live(payment_id)
-    except Exception:
-        mock_report_payment(payment_id)
+        return remind_payment_live(payment_id, requester_user_id)
+    except LookupError:
+        result = mock_remind_payment(payment_id, requester_user_id)
+        if result is None:
+            raise ValueError("Only the person who is owed can send a reminder.")
+        return result
 
 
 st.set_page_config(
@@ -75,6 +84,9 @@ with col_sel:
 user_id   = get_current_user_id()
 room_id   = get_current_room_id()
 room_name = get_current_room_name()
+
+# ── Notifications for this user (e.g. "X reminded you to pay") ────────────────
+render_notification_banner(user_id, key_prefix="payments_page")
 
 if not room_id:
     render_empty_state("🏠", "No room selected", "Please select a room from the dropdown above to view and settle payments.")
@@ -178,21 +190,25 @@ def settle_handler(payment_id):
     st.success("Payment settled!")
     st.rerun()
 
-def report_handler(payment_id):
-    report_payment(payment_id)
-    st.warning("Payment reported.")
-    st.rerun()
+def remind_handler(payment_id):
+    try:
+        result = remind_payment(payment_id, user_id)
+        st.toast(f"Reminder sent to {result['payer_name']}.", icon="🔔")
+    except ValueError as e:
+        st.warning(str(e))
+    except Exception as e:
+        st.error(f"Could not send reminder: {safe_error_message(e)}")
 
 with tab_all:
-    render_payment_table(payments, user_id, on_settle=settle_handler, on_report=report_handler, key_prefix="all")
+    render_payment_table(payments, user_id, on_settle=settle_handler, on_remind=remind_handler, key_prefix="all")
 
 with tab_owe:
     owe_list = [p for p in payments if p["payerUserId"] == user_id and p["paymentStatus"] == "pending"]
-    render_payment_table(owe_list, user_id, on_settle=settle_handler, on_report=report_handler, key_prefix="owe")
+    render_payment_table(owe_list, user_id, on_settle=settle_handler, key_prefix="owe")
 
 with tab_receive:
     receive_list = [p for p in payments if p["payeeUserId"] == user_id and p["paymentStatus"] == "pending"]
-    render_payment_table(receive_list, user_id, key_prefix="recv")
+    render_payment_table(receive_list, user_id, on_remind=remind_handler, key_prefix="recv")
 
 with tab_history:
     history = [p for p in payments if p["paymentStatus"] in ("settled", "reported")]

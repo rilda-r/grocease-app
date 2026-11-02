@@ -666,4 +666,108 @@ def settle_payment_live(payment_id: int) -> bool:
 def report_payment_live(payment_id: int) -> bool:
     """Mark a payment as reported in Supabase PostgreSQL."""
     execute("UPDATE payments SET payment_status = 'reported', reported_at = %s WHERE id = %s", (datetime.utcnow(), int(payment_id)))
-    return True
+    return True
+
+
+
+def remind_payment_live(payment_id: int, requester_user_id: int) -> dict:
+    """The person who is owed (the shopper / payee) nudges the payer to pay.
+
+    Creates an in-app notification for the payer. The payment itself stays
+    'pending' - a reminder never changes its status.
+
+    Raises:
+        LookupError: payment does not exist.
+        ValueError:  requester is not the payee, or the payment is not pending.
+    """
+    with get_cursor() as cur:
+        pay = query_one(
+            """
+            SELECT p.id, p.room_id, p.payer_user_id, p.payee_user_id, p.amount, p.payment_status,
+                   r.name AS room_name,
+                   COALESCE(NULLIF(pp.nickname, ''), NULLIF(up.nickname, ''), NULLIF(up.username, ''), NULLIF(up.full_name, ''), 'Member') AS payer_name,
+                   COALESCE(NULLIF(pe.nickname, ''), NULLIF(ue.nickname, ''), NULLIF(ue.username, ''), NULLIF(ue.full_name, ''), 'Someone') AS payee_name
+            FROM payments p
+            JOIN rooms r ON r.id = p.room_id
+            JOIN users up ON up.id = p.payer_user_id
+            LEFT JOIN profiles pp ON pp.user_id = up.id
+            JOIN users ue ON ue.id = p.payee_user_id
+            LEFT JOIN profiles pe ON pe.user_id = ue.id
+            WHERE p.id = %s
+            """,
+            (int(payment_id),),
+            cur,
+        )
+        if not pay:
+            raise LookupError("Payment not found.")
+        if int(pay["payee_user_id"]) != int(requester_user_id):
+            raise ValueError("Only the person who is owed can send a reminder.")
+        if pay["payment_status"] != "pending":
+            raise ValueError("This payment is no longer pending.")
+
+        message = (
+            f"{pay['payee_name']} reminded you to pay \u20b9{float(pay['amount']):,.2f} "
+            f"for the shopping bill in \"{pay['room_name']}\"."
+        )
+        execute(
+            """
+            INSERT INTO notifications (user_id, room_id, payment_id, kind, message, is_read, created_at)
+            VALUES (%s, %s, %s, 'payment_reminder', %s, FALSE, %s)
+            """,
+            (pay["payer_user_id"], pay["room_id"], pay["id"], message, datetime.utcnow()),
+            cur,
+        )
+        execute(
+            "UPDATE payments SET last_reminded_at = %s WHERE id = %s",
+            (datetime.utcnow(), pay["id"]),
+            cur,
+        )
+    return {"payer_user_id": pay["payer_user_id"], "payer_name": pay["payer_name"]}
+
+
+def get_unread_notifications(user_id: int, limit: int = 20) -> list:
+    """Unread in-app notifications for a user, newest first."""
+    if not user_id:
+        return []
+    try:
+        rows = query_all(
+            """
+            SELECT id, room_id, payment_id, kind, message, created_at
+            FROM notifications
+            WHERE user_id = %s AND is_read = FALSE
+            ORDER BY created_at DESC, id DESC
+            LIMIT %s
+            """,
+            (int(user_id), int(limit)),
+        )
+        return [
+            {
+                "id": r["id"],
+                "roomId": r.get("room_id"),
+                "paymentId": r.get("payment_id"),
+                "kind": r.get("kind"),
+                "message": r["message"],
+                "createdAt": str(r.get("created_at") or ""),
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+
+
+def mark_notification_read(notification_id: int, user_id: int) -> bool:
+    """Mark one of the user's notifications as read."""
+    execute(
+        "UPDATE notifications SET is_read = TRUE WHERE id = %s AND user_id = %s",
+        (int(notification_id), int(user_id)),
+    )
+    return True
+
+
+def mark_all_notifications_read(user_id: int) -> bool:
+    """Mark all of the user's notifications as read."""
+    execute(
+        "UPDATE notifications SET is_read = TRUE WHERE user_id = %s AND is_read = FALSE",
+        (int(user_id),),
+    )
+    return True

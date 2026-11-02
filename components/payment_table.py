@@ -10,7 +10,7 @@ from utils.formatting import format_currency, format_datetime, badge_html
 from mock.mock_data import get_username
 
 
-def render_payment_table(payments: list, current_user_id: int, on_settle=None, on_report=None, key_prefix: str = ""):
+def render_payment_table(payments: list, current_user_id: int, on_settle=None, on_remind=None, key_prefix: str = ""):
     """
     Render payment records.
 
@@ -18,7 +18,7 @@ def render_payment_table(payments: list, current_user_id: int, on_settle=None, o
         payments: list of Payment dicts
         current_user_id: logged-in user id
         on_settle: callback(payment_id)
-        on_report: callback(payment_id)
+        on_remind: callback(payment_id) - shown only to the person who is owed
         key_prefix: unique prefix for widget keys
     """
     if not payments:
@@ -54,13 +54,13 @@ def render_payment_table(payments: list, current_user_id: int, on_settle=None, o
         with row[5]:
             status = p["paymentStatus"]
             if status == "pending":
-                # Payer can settle; either party can report
+                # Payer can settle; only the person who is owed (the shopper) can remind
                 if p["payerUserId"] == current_user_id and on_settle:
                     if st.button("✅ Settle", key=f"{key_prefix}_settle_{p['id']}"):
                         on_settle(p["id"])
-                if on_report:
-                    if st.button("⚠️ Report", key=f"{key_prefix}_report_{p['id']}"):
-                        on_report(p["id"])
+                if p["payeeUserId"] == current_user_id and on_remind:
+                    if st.button("🔔 Remind", key=f"{key_prefix}_remind_{p['id']}"):
+                        on_remind(p["id"])
             else:
                 st.write("—")
 

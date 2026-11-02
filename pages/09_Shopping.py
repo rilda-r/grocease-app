@@ -185,10 +185,10 @@ else:
                 st.markdown('<div class="shop-action-row">', unsafe_allow_html=True)
                 btn_c1, btn_c2 = st.columns([1, 1], gap="small")
                 with btn_c1:
-                    if st.button("❌ Unavailable", key=f"na_{item['id']}", use_container_width=True, help="Mark item unavailable"):
+                    if st.button("❌ Unavailable", key=f"na_{item['id']}", use_container_width=True):
                         do_mark_status(item["id"], "unavailable")
                 with btn_c2:
-                    if st.button("🛒 +1 Bought", key=f"buy_{item['id']}", type="primary", use_container_width=True, help="Mark 1 purchased (remaining decreases by 1)"):
+                    if st.button("🛒 +1 Bought", key=f"buy_{item['id']}", type="primary", use_container_width=True):
                         do_mark_purchased(item["id"], inc=1)
                 st.markdown('</div>', unsafe_allow_html=True)
 

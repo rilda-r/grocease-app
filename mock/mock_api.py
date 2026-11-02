@@ -388,6 +388,16 @@ def report_payment(payment_id: int) -> bool:
     return False
 
 
+def remind_payment(payment_id: int, requester_user_id: int):
+    """Mock reminder: returns the payer's name if the requester is the payee, else None."""
+    _init_store()
+    from mock.mock_data import get_username
+    for payment in st.session_state["store_payments"]:
+        if payment["id"] == payment_id and payment["payeeUserId"] == requester_user_id:
+            return {"payer_name": get_username(payment["payerUserId"])}
+    return None
+
+
 # ─────────────────────────────────────────────────────────────
 # PERSONAL EXPENSES
 # ─────────────────────────────────────────────────────────────
