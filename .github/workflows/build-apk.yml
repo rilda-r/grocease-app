@@ -20,15 +20,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build APK with Gradle
+        working-directory: ./android
         run: |
-          cd android
           gradle wrapper
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
