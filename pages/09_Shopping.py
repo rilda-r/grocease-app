@@ -58,33 +58,19 @@ if not room_id:
         st.switch_page("pages/07_Rooms.py")
     st.stop()
 
-# ── Live Sync Header Frame ───────────────────────────────────────────────────
+# ── Shopping Room Frame ────────────────────────────────────────────────────────
 st.markdown(
-    """
-    <div style="background:#F7FBFA; border:1px solid #CADDD8; border-radius:16px; padding:0.65rem 1rem; margin-bottom:1.2rem; box-shadow:0 2px 10px rgba(16,39,42,0.04);">
+    f"""
+    <div style="background:#F7FBFA; border:1px solid #CADDD8; border-radius:14px; padding:0.6rem 1rem; margin-bottom:1.2rem; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 6px rgba(16,39,42,0.03);">
+        <span style="color:#4A6568; font-size:0.95rem;">Shopping in: <strong style="color:#10272A;">{room_name}</strong></span>
+        <span style="background:#EAF1EB; color:#2E5135; border:1px solid #6B8F71; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:6px;">
+            <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#6B8F71;"></span>
+            Live
+        </span>
+    </div>
     """,
     unsafe_allow_html=True,
 )
-col_sub, col_sync = st.columns([3, 1.2], vertical_alignment="center")
-with col_sub:
-    st.markdown(
-        f"""
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <span style="color:#4A6568; font-size:1.02rem;">Shopping in: <strong style="color:#10272A;">{room_name}</strong></span>
-            <span style="background:#EAF1EB; color:#2E5135; border:1px solid #6B8F71; padding:3px 10px; border-radius:12px; font-size:0.78rem; font-weight:700; display:inline-flex; align-items:center; gap:6px;">
-                <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#6B8F71;"></span>
-                Live Sync
-            </span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with col_sync:
-    st.markdown('<div style="display:flex; justify-content:flex-end; padding-right:1rem;">', unsafe_allow_html=True)
-    if st.button("🔄 Live Sync", key="shop_live_sync", help="Fetch the latest shopping updates"):
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ── Helper to load live items from Supabase ───────────────────────────────────
@@ -151,123 +137,104 @@ st.markdown(f"### 🟡 Pending ({len(pending_items)})")
 if not pending_items:
     st.success("All items have been marked! Ready to finish shopping.")
 else:
-    COLS_PER_ROW = 2
-    for row_idx in range(0, len(pending_items), COLS_PER_ROW):
-        chunk = pending_items[row_idx:row_idx + COLS_PER_ROW]
-        grid_cols = st.columns(COLS_PER_ROW, gap="medium")
-        for col_idx, item in enumerate(chunk):
-            with grid_cols[col_idx]:
-                added_by = item.get("addedByName") or item.get("added_by_name") or "Member"
-                total_qty = item.get("quantity", 1)
-                purchased_qty = item.get("purchasedQuantity", 0) or 0
-                remaining_qty = max(0, total_qty - purchased_qty)
+    for item in pending_items:
+        item_id = item["id"]
+        item_name = item.get("itemName") or item.get("item_name", "Item")
+        added_by = item.get("addedByName") or item.get("added_by_name") or "Member"
+        total_qty = item.get("quantity", 1)
+        purchased_qty = item.get("purchasedQuantity", 0) or 0
+        remaining_qty = max(0, total_qty - purchased_qty)
 
-                # Compact Item Card
+        with st.container(border=True):
+            col_info, col_na, col_buy = st.columns([4.2, 0.8, 1.1], vertical_alignment="center")
+            with col_info:
                 st.markdown(
                     f"""
-                    <div style="background:#F7FBFA; border:1px solid #CADDD8; border-left:3.5px solid #0F766E;
-                                border-radius:12px; padding:0.5rem 0.8rem; margin-bottom:0.25rem;
-                                box-shadow:0 2px 8px -2px rgba(16, 39, 42, 0.05);">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="display:flex; align-items:center; gap:0.4rem; overflow:hidden;">
-                                <span style="font-size:0.95rem; font-weight:700; color:#10272A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🛒 {item.get('itemName') or item.get('item_name', 'Item')}</span>
-                                <span style='font-size:0.7rem; color:#4A6568; background:#F5FAF8; border:1px solid #CADDD8; padding:1px 6px; border-radius:10px; font-weight:600; white-space:nowrap;'>👤 {added_by}</span>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:0.45rem; flex-shrink:0;">
-                                <span style="font-size:0.72rem; color:#6B8F71; font-weight:600;">{purchased_qty}/{total_qty}</span>
-                                <span style="font-family:'Fraunces',Georgia,serif; font-size:1.15rem; font-weight:800; color:#0F766E;">×{remaining_qty}</span>
-                            </div>
+                    <div class="shop-item-inline" style="display:flex; align-items:center; justify-content:space-between; gap:6px; overflow:hidden; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:6px; overflow:hidden; min-width:0;">
+                            <span style="font-size:0.95rem; font-weight:700; color:#10272A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🛒 {item_name}</span>
+                            <span style="font-size:0.72rem; color:#4A6568; background:#F5FAF8; border:1px solid #CADDD8; padding:1px 6px; border-radius:10px; font-weight:600; white-space:nowrap; flex-shrink:0;">👤 {added_by}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:5px; flex-shrink:0; margin-left:auto; padding-right:4px;">
+                            <span style="font-size:0.75rem; color:#6B8F71; font-weight:600; white-space:nowrap;">{purchased_qty}/{total_qty}</span>
+                            <span style="font-family:'Fraunces',Georgia,serif; font-size:1.05rem; font-weight:800; color:#0F766E; white-space:nowrap;">×{remaining_qty}</span>
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
-
-                # Flex Row Container with Centered Cross-Axis Alignment for Action Buttons
-                st.markdown('<div class="shop-action-row">', unsafe_allow_html=True)
-                btn_c1, btn_c2 = st.columns([1, 1], gap="small")
-                with btn_c1:
-                    if st.button("❌ Unavailable", key=f"na_{item['id']}", use_container_width=True):
-                        do_mark_status(item["id"], "unavailable")
-                with btn_c2:
-                    if st.button("🛒 +1 Bought", key=f"buy_{item['id']}", type="primary", use_container_width=True):
-                        do_mark_purchased(item["id"], inc=1)
-                st.markdown('</div>', unsafe_allow_html=True)
+            with col_na:
+                if st.button("❌", key=f"na_{item_id}", help="Mark Unavailable", use_container_width=True):
+                    do_mark_status(item_id, "unavailable")
+            with col_buy:
+                if st.button("🛒+1", key=f"buy_{item_id}", type="primary", help="Mark 1 Bought", use_container_width=True):
+                    do_mark_purchased(item_id, inc=1)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Fully Purchased items (Compact Responsive Grid) ───────────────────────────
+# ── Fully Purchased items (Single-Line Compact Row) ───────────────────────────
 if purchased_items:
     st.markdown(f"### ✅ Fully Purchased ({len(purchased_items)})")
-    COLS_PER_ROW = 2
-    for row_idx in range(0, len(purchased_items), COLS_PER_ROW):
-        chunk = purchased_items[row_idx:row_idx + COLS_PER_ROW]
-        grid_cols = st.columns(COLS_PER_ROW, gap="medium")
-        for col_idx, item in enumerate(chunk):
-            with grid_cols[col_idx]:
-                added_by = item.get("addedByName") or item.get("added_by_name") or "Member"
-                total_qty = item.get("quantity", 1)
-                purchased_count = item.get("purchasedQuantity", total_qty) or total_qty
+    for item in purchased_items:
+        item_id = item["id"]
+        item_name = item.get("itemName") or item.get("item_name", "Item")
+        added_by = item.get("addedByName") or item.get("added_by_name") or "Member"
+        total_qty = item.get("quantity", 1)
+        purchased_count = item.get("purchasedQuantity", total_qty) or total_qty
 
-                # Compact Purchased Card
+        with st.container(border=True):
+            col_info, col_undo, col_reset = st.columns([4.4, 0.9, 0.9], vertical_alignment="center")
+            with col_info:
                 st.markdown(
                     f"""
-                    <div style="background:#F4F9F8; border:1px solid rgba(163, 150, 112, 0.35); border-left:3.5px solid #6B8F71;
-                                border-radius:12px; padding:0.5rem 0.8rem; margin-bottom:0.25rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="display:flex; align-items:center; gap:0.4rem; overflow:hidden;">
-                                <span style="font-size:0.95rem; font-weight:600; color:#5A7679; text-decoration:line-through; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">✅ {item['itemName']}</span>
-                                <span style='font-size:0.7rem; color:#4D4828; background:#FFFFFF; border:1px solid #A39670; padding:1px 6px; border-radius:10px; white-space:nowrap;'>👤 {added_by}</span>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:0.45rem; flex-shrink:0;">
-                                <span style="font-size:0.75rem; color:#4D4828; font-weight:600;">{purchased_count}/{total_qty}</span>
-                                <span style="font-family:'Fraunces',Georgia,serif; font-size:1.1rem; font-weight:700; color:#6B8F71;">Done</span>
-                            </div>
+                    <div class="shop-item-inline" style="display:flex; align-items:center; justify-content:space-between; gap:6px; overflow:hidden; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:6px; overflow:hidden; min-width:0;">
+                            <span style="font-size:0.95rem; font-weight:600; color:#5A7679; text-decoration:line-through; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">✅ {item_name}</span>
+                            <span style="font-size:0.72rem; color:#4D4828; background:#FFFFFF; border:1px solid #A39670; padding:1px 6px; border-radius:10px; white-space:nowrap; flex-shrink:0;">👤 {added_by}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:5px; flex-shrink:0; margin-left:auto; padding-right:4px;">
+                            <span style="font-size:0.75rem; color:#4D4828; font-weight:600; white-space:nowrap;">{purchased_count}/{total_qty}</span>
+                            <span style="font-family:'Fraunces',Georgia,serif; font-size:1.0rem; font-weight:700; color:#6B8F71; white-space:nowrap;">Done</span>
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
+            with col_undo:
+                if st.button("↩ -1", key=f"undo_buy_{item_id}", help="Decrease purchased count by 1", use_container_width=True):
+                    do_mark_purchased(item_id, inc=-1)
+            with col_reset:
+                if st.button("🔄", key=f"reset_buy_{item_id}", help="Reset to pending", use_container_width=True):
+                    do_reset_item(item_id)
 
-                st.markdown('<div class="shop-action-row">', unsafe_allow_html=True)
-                p_c1, p_c2 = st.columns([1, 1], gap="small")
-                with p_c1:
-                    if st.button("↩ -1 Undo", key=f"undo_buy_{item['id']}", use_container_width=True, help="Decrease purchased count by 1"):
-                        do_mark_purchased(item["id"], inc=-1)
-                with p_c2:
-                    if st.button("🔄 Reset", key=f"reset_buy_{item['id']}", use_container_width=True, help="Reset to 0 bought"):
-                        do_reset_item(item["id"])
-                st.markdown('</div>', unsafe_allow_html=True)
-
-# ── Unavailable items (Compact Responsive Grid) ───────────────────────────────
+# ── Unavailable items (Single-Line Compact Row) ───────────────────────────────
 if unavailable_items:
     st.markdown(f"### ❌ Unavailable ({len(unavailable_items)})")
-    COLS_PER_ROW = 2
-    for row_idx in range(0, len(unavailable_items), COLS_PER_ROW):
-        chunk = unavailable_items[row_idx:row_idx + COLS_PER_ROW]
-        grid_cols = st.columns(COLS_PER_ROW, gap="medium")
-        for col_idx, item in enumerate(chunk):
-            with grid_cols[col_idx]:
-                added_by = item.get("addedByName") or item.get("added_by_name") or "Member"
+    for item in unavailable_items:
+        item_id = item["id"]
+        item_name = item.get("itemName") or item.get("item_name", "Item")
+        added_by = item.get("addedByName") or item.get("added_by_name") or "Member"
+
+        with st.container(border=True):
+            col_info, col_reset = st.columns([4.8, 1.2], vertical_alignment="center")
+            with col_info:
                 st.markdown(
                     f"""
-                    <div style="background:#F7FBFA; border:1px solid #CADDD8; border-left:3.5px solid #8C1C13;
-                                border-radius:12px; padding:0.5rem 0.8rem; margin-bottom:0.25rem; box-shadow:0 2px 8px -2px rgba(16, 39, 42, 0.05);">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="display:flex; align-items:center; gap:0.4rem; overflow:hidden;">
-                                <span style="font-size:0.95rem; font-weight:600; color:#8C1C13; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">❌ {item['itemName']}</span>
-                                <span style='font-size:0.7rem; color:#4A6568; background:#F5FAF8; border:1px solid #CADDD8; padding:1px 6px; border-radius:10px; white-space:nowrap;'>👤 {added_by}</span>
-                            </div>
-                            <span style="font-family:'Fraunces',Georgia,serif; font-size:1.15rem; font-weight:700; color:#8C1C13;">×{item['quantity']}</span>
+                    <div class="shop-item-inline" style="display:flex; align-items:center; justify-content:space-between; gap:6px; overflow:hidden; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:6px; overflow:hidden; min-width:0;">
+                            <span style="font-size:0.95rem; font-weight:600; color:#8C1C13; text-decoration:line-through; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">❌ {item_name}</span>
+                            <span style="font-size:0.72rem; color:#8C1C13; background:#FFF0F3; border:1px solid rgba(140,29,64,0.3); padding:1px 6px; border-radius:10px; white-space:nowrap; flex-shrink:0;">👤 {added_by}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:5px; flex-shrink:0; margin-left:auto; padding-right:4px;">
+                            <span style="font-size:0.78rem; font-weight:600; color:#8C1C13;">Unavailable</span>
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
-                st.markdown('<div class="shop-action-row">', unsafe_allow_html=True)
-                if st.button("↩ Restore to Pending", key=f"undo_na_{item['id']}", use_container_width=True):
-                    do_mark_status(item["id"], "pending")
-                st.markdown('</div>', unsafe_allow_html=True)
+            with col_reset:
+                if st.button("🔄 Reset", key=f"reset_na_{item_id}", help="Move back to pending", use_container_width=True):
+                    do_reset_item(item_id)
 
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("---")

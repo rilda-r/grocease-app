@@ -2,7 +2,7 @@
 components/payment_table.py
 ===========================
 Payment records component.
-Minimalistic, responsive card design for seamless mobile & desktop views.
+Minimalistic, single-line card design for seamless mobile & desktop views.
 """
 
 import streamlit as st
@@ -19,7 +19,7 @@ def render_payment_table(
     key_prefix: str = "",
 ):
     """
-    Render payment records in a clean, responsive card layout.
+    Render payment records in a clean, single-line horizontal card layout.
     """
     if not payments:
         st.markdown(
@@ -57,19 +57,21 @@ def render_payment_table(
         is_payee = payee_id is not None and int(payee_id) == int(current_user_id)
 
         with st.container(border=True):
-            col_info, col_action = st.columns([3.5, 1.5], vertical_alignment="center")
+            col_info, col_amt, col_action = st.columns([3.2, 1.4, 1.4], vertical_alignment="center")
             with col_info:
                 st.markdown(
                     f"""
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span style="font-size:1.02rem; font-weight:700; color:#10272A;">👤 {payer_disp} <span style="color:#0F766E;">➔</span> {payee_disp}</span>
-                        <span style="font-size:1.05rem; font-weight:800; color:#0F766E;">{format_currency(amount_val)}</span>
-                        {badge_html(status)}
-                    </div>
-                    <div style="font-size:0.78rem; color:#4A6568; margin-top:3px;">
-                        📅 {format_datetime(created_val)}
+                    <div class="groc-item-inline" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; overflow:hidden; min-width:0;">
+                        <span style="font-size:0.92rem; font-weight:700; color:#10272A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">👤 {payer_disp} ➔ {payee_disp}</span>
+                        <span style="font-size:0.72rem; color:#4A6568; white-space:nowrap; flex-shrink:0;">📅 {format_datetime(created_val)}</span>
                     </div>
                     """,
+                    unsafe_allow_html=True,
+                )
+
+            with col_amt:
+                st.markdown(
+                    f"<div style='font-size:0.95rem; font-weight:800; color:#0F766E; text-align:right; white-space:nowrap;'>{format_currency(amount_val)} {badge_html(status)}</div>",
                     unsafe_allow_html=True,
                 )
 
@@ -85,6 +87,6 @@ def render_payment_table(
                         if st.button("⚠️ Report", key=f"{key_prefix}_report_{p_id}", use_container_width=True):
                             on_report(p_id)
                     else:
-                        st.markdown("<div style='text-align:right; font-size:0.85rem; color:#E3A02E; font-weight:600;'>Pending</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='text-align:right; font-size:0.82rem; color:#E3A02E; font-weight:600;'>Pending</div>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<div style='text-align:right; font-size:0.85rem; color:#6B8F71; font-weight:600;'>{status.capitalize()}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='text-align:right; font-size:0.82rem; color:#6B8F71; font-weight:600;'>{status.capitalize()}</div>", unsafe_allow_html=True)

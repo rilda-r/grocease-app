@@ -197,6 +197,7 @@ def render_room_selector(key_prefix: str = "global", show_refresh: bool = True):
         cur_idx = 0
 
     if show_refresh:
+        st.markdown('<div class="groc-room-sel-row">', unsafe_allow_html=True)
         col_sel, col_ref = st.columns([4.2, 1.2], vertical_alignment="bottom")
         with col_sel:
             selected_label = st.selectbox(
@@ -209,6 +210,7 @@ def render_room_selector(key_prefix: str = "global", show_refresh: bool = True):
             if st.button("🔄 Sync", key=f"{key_prefix}_top_sync_btn", help="Sync latest room data", use_container_width=True):
                 st.toast("Data refreshed! ✨", icon="🔄")
                 st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
         selected_label = st.selectbox(
             "🏠 Active Room",

@@ -496,21 +496,114 @@ div[data-testid="stAlert"]:has([data-testid="stNotificationContentError"]) {{
     vertical-align: middle !important;
 }}
 
+/* Lists & horizontal action rows on mobile and desktop */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"],
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"],
+.groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] {{
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+}}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
+.groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
+    min-width: 0 !important;
+}}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
+.groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child {{
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+}}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
+.groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child) {{
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+}}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) > div,
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) > div {{
+    padding: 0.45rem 0.65rem !important;
+    margin-bottom: 0.25rem !important;
+    border-radius: 12px !important;
+    background: #FFFFFF !important;
+}}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) .stButton > button,
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) .stButton > button {{
+    padding: 0.25rem 0.45rem !important;
+    font-size: 0.8rem !important;
+    min-height: 2rem !important;
+    height: 2rem !important;
+    min-width: 2rem !important;
+    line-height: 1 !important;
+    border-radius: 9px !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}}
+
 /* Mobile responsive enhancements */
 @media (max-width: 640px) {{
     .block-container {{
         padding-top: 1rem !important;
         padding-bottom: 2rem !important;
-        padding-left: 0.65rem !important;
-        padding-right: 0.65rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
     }}
     div[data-testid="stVerticalBlockBorderWrapper"] > div {{
-        padding: 0.75rem 0.85rem !important;
+        padding: 0.65rem 0.75rem !important;
         border-radius: 14px !important;
     }}
-    .stButton > button {{
-        padding: 0.42rem 0.75rem !important;
-        font-size: 0.86rem !important;
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) > div,
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) > div {{
+        padding: 0.38rem 0.5rem !important;
+        margin-bottom: 0.25rem !important;
+        border-radius: 12px !important;
+    }}
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"],
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"],
+    .groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] {{
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 0.25rem !important;
+    }}
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
+    .groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
+        min-width: 0 !important;
+    }}
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child,
+    .groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child {{
+        flex: 1 1 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+    }}
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child),
+    .groc-room-sel-row div[data-testid="stHorizontalBlock"], .groc-page-header div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:first-child) {{
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+    }}
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.groc-item-inline) .stButton > button,
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.shop-item-inline) .stButton > button {{
+        padding: 0.2rem 0.35rem !important;
+        font-size: 0.78rem !important;
+        min-height: 1.95rem !important;
+        height: 1.95rem !important;
+        min-width: 1.95rem !important;
+        border-radius: 8px !important;
     }}
 }}
 </style>

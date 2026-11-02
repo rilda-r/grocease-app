@@ -68,19 +68,14 @@ if not room_id:
         st.switch_page("pages/07_Rooms.py")
     st.stop()
 
-# Room sub-header with live status badge and manual refresh
-col_sub, col_sync = st.columns([3, 1])
-with col_sub:
-    st.markdown(
-        f"<p style='color:#4A6568; margin-top:-0.8rem;'>"
-        f"Viewing items in: <strong>{room_name}</strong> &nbsp;"
-        f"<span style='background:#EAF1EB; color:#6B8F71; border:1px solid #6B8F71; padding:3px 10px; border-radius:12px; font-size:0.78rem; font-weight:700;'>"
-        f"🟢 Live Sync</span></p>",
-        unsafe_allow_html=True,
-    )
-with col_sync:
-    if st.button("🔄 Live Sync", help="Fetch the latest grocery updates"):
-        st.rerun()
+# Room sub-header with live status indicator
+st.markdown(
+    f"<p style='color:#4A6568; margin-top:-0.5rem;'>"
+    f"Viewing items in: <strong>{room_name}</strong> &nbsp;"
+    f"<span style='background:#EAF1EB; color:#6B8F71; border:1px solid #6B8F71; padding:2px 8px; border-radius:12px; font-size:0.76rem; font-weight:700;'>"
+    f"🟢 Live</span></p>",
+    unsafe_allow_html=True,
+)
 
 st.markdown("<hr style='border:none; border-top:1px solid #CADDD8; margin:0.2rem 0 1.2rem 0;'>", unsafe_allow_html=True)
 

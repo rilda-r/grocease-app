@@ -2,7 +2,7 @@
 components/grocery_table.py
 ===========================
 Grocery list table component.
-Minimalistic, responsive card design for seamless mobile & desktop views.
+Minimalistic, single-line card design for seamless mobile & desktop views.
 """
 
 import streamlit as st
@@ -17,7 +17,7 @@ def render_grocery_table(
     on_delete=None,
 ):
     """
-    Render grocery items in a clean, responsive card layout.
+    Render grocery items in a clean, single-line horizontal card layout.
     """
     if not items:
         st.markdown(
@@ -52,32 +52,42 @@ def render_grocery_table(
         is_purchased = status == "purchased"
 
         with st.container(border=True):
-            col_info, col_actions = st.columns([4, 1.2], vertical_alignment="center")
-            with col_info:
-                st.markdown(
-                    f"""
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span style="font-size:1.05rem; font-weight:700; color:#10272A;">🛒 {item_name}</span>
-                        <span style="background:#E6F4F1; color:#0F766E; font-weight:700; font-size:0.82rem; padding:2px 8px; border-radius:10px;">×{qty}</span>
-                        {badge_html(status)}
-                    </div>
-                    <div style="font-size:0.8rem; color:#4A6568; margin-top:3px;">
-                        👤 Added by <strong style="color:#10272A;">{added_by_display}</strong>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-            with col_actions:
-                if is_purchased:
-                    st.markdown("<div style='text-align:right; font-size:0.8rem; color:#4A6568;'>🔒 Purchased</div>", unsafe_allow_html=True)
-                elif is_owner:
-                    c_edit, c_del = st.columns(2)
-                    with c_edit:
-                        if on_edit and st.button("✏️", key=f"edit_item_{item_id}", help="Edit item", use_container_width=True):
-                            on_edit(item)
-                    with c_del:
-                        if on_delete and st.button("🗑️", key=f"del_item_{item_id}", help="Delete item", use_container_width=True):
-                            on_delete(item_id)
-                else:
-                    st.write("")
+            if is_owner and not is_purchased:
+                col_info, col_edit, col_del = st.columns([4.4, 0.7, 0.7], vertical_alignment="center")
+                with col_info:
+                    st.markdown(
+                        f"""
+                        <div class="groc-item-inline" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; overflow:hidden; min-width:0;">
+                            <span style="font-size:0.95rem; font-weight:700; color:#10272A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🛒 {item_name}</span>
+                            <span style="background:#E6F4F1; color:#0F766E; font-weight:700; font-size:0.78rem; padding:1px 6px; border-radius:8px; white-space:nowrap; flex-shrink:0;">×{qty}</span>
+                            <span style="font-size:0.72rem; color:#4A6568; background:#F5FAF8; border:1px solid #CADDD8; padding:1px 6px; border-radius:8px; white-space:nowrap; flex-shrink:0;">👤 {added_by_display}</span>
+                            {badge_html(status)}
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                with col_edit:
+                    if on_edit and st.button("✏️", key=f"edit_item_{item_id}", help="Edit item", use_container_width=True):
+                        on_edit(item)
+                with col_del:
+                    if on_delete and st.button("🗑️", key=f"del_item_{item_id}", help="Delete item", use_container_width=True):
+                        on_delete(item_id)
+            else:
+                col_info, col_status = st.columns([4.6, 1.2], vertical_alignment="center")
+                with col_info:
+                    st.markdown(
+                        f"""
+                        <div class="groc-item-inline" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; overflow:hidden; min-width:0;">
+                            <span style="font-size:0.95rem; font-weight:700; color:#10272A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🛒 {item_name}</span>
+                            <span style="background:#E6F4F1; color:#0F766E; font-weight:700; font-size:0.78rem; padding:1px 6px; border-radius:8px; white-space:nowrap; flex-shrink:0;">×{qty}</span>
+                            <span style="font-size:0.72rem; color:#4A6568; background:#F5FAF8; border:1px solid #CADDD8; padding:1px 6px; border-radius:8px; white-space:nowrap; flex-shrink:0;">👤 {added_by_display}</span>
+                            {badge_html(status)}
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                with col_status:
+                    if is_purchased:
+                        st.markdown("<div style='text-align:right; font-size:0.8rem; color:#4A6568; white-space:nowrap;'>🔒 Done</div>", unsafe_allow_html=True)
+                    else:
+                        st.write("")
