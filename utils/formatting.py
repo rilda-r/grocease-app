@@ -14,24 +14,60 @@ def format_currency(amount, symbol: str = "₹") -> str:
         return f"{symbol}0.00"
 
 
+def _get_local_timezone():
+    """Return local timezone. Defaults to Indian Standard Time (IST, UTC+05:30)."""
+    import os
+    from datetime import timezone, timedelta
+    offset_hours = float(os.environ.get("GROCEASE_TZ_OFFSET_HOURS", 5.5))
+    return timezone(timedelta(hours=offset_hours))
+
+
 def format_date(iso_str: str) -> str:
-    """Format an ISO date string to DD MMM YYYY."""
+    """Format an ISO date string to DD MMM YYYY adjusted to local timezone."""
+    if not iso_str:
+        return "—"
     try:
-        from datetime import datetime
-        dt = datetime.fromisoformat(iso_str)
-        return dt.strftime("%d %b %Y")
+        from datetime import datetime, timezone
+        if isinstance(iso_str, datetime):
+            dt = iso_str
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(_get_local_timezone()).strftime("%d %b %Y")
+        s = str(iso_str).strip()
+        if len(s) == 10 and s.count("-") == 2:
+            dt = datetime.strptime(s, "%Y-%m-%d")
+            return dt.strftime("%d %b %Y")
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        s = s.replace(" ", "T")
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(_get_local_timezone()).strftime("%d %b %Y")
     except Exception:
-        return iso_str or "—"
+        return str(iso_str) if iso_str else "—"
 
 
 def format_datetime(iso_str: str) -> str:
-    """Format an ISO datetime string to DD MMM YYYY, HH:MM."""
+    """Format an ISO datetime string to DD MMM YYYY, HH:MM in local timezone (IST, UTC+05:30)."""
+    if not iso_str:
+        return "—"
     try:
-        from datetime import datetime
-        dt = datetime.fromisoformat(iso_str)
-        return dt.strftime("%d %b %Y, %H:%M")
+        from datetime import datetime, timezone
+        if isinstance(iso_str, datetime):
+            dt = iso_str
+        else:
+            s = str(iso_str).strip()
+            if s.endswith("Z"):
+                s = s[:-1] + "+00:00"
+            s = s.replace(" ", "T")
+            dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        local_dt = dt.astimezone(_get_local_timezone())
+        return local_dt.strftime("%d %b %Y, %I:%M %p")
     except Exception:
-        return iso_str or "—"
+        return str(iso_str) if iso_str else "—"
 
 
 STATUS_BADGE = {
