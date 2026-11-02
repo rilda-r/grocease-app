@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Android APK
@@ -27,11 +30,21 @@ jobs:
 
       - name: Build APK with Gradle
         working-directory: ./android
-        run: gradle assembleDebug --stacktrace
+        run: |
+          gradle assembleDebug --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/grocease.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: grocease-app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: grocease-apk
+          path: android/app/build/outputs/apk/debug/grocease.apk
           if-no-files-found: error
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "GrocEase App v1.0.0"
+          body: "Official Android APK for GrocEase — Smart Shared Grocery Tracker & Budget Manager."
+          files: android/app/build/outputs/apk/debug/grocease.apk
