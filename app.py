@@ -11,7 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Ensure sub-modules can be discovered natively from root context
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+_root_dir = os.path.dirname(os.path.abspath(__file__))
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
 
 from style import apply_base_style, top_nav, hide_sidebar, render_dev_mode_banner
 from database.database import (
@@ -61,6 +63,11 @@ if not st.session_state.splash_completed:
                 align-items: center; 
                 justify-content: center;
                 overflow: hidden;
+                animation: splashFadeOut 0.4s ease 2.1s forwards;
+            }
+            @keyframes splashFadeOut {
+                0% { opacity: 1; }
+                100% { opacity: 0; pointer-events: none; }
             }
             .splash-content { 
                 position: relative; 
@@ -138,7 +145,7 @@ if not st.session_state.splash_completed:
         """,
         unsafe_allow_html=True,
     )
-    time.sleep(0.4)
+    time.sleep(2.5)
     st.session_state.splash_completed = True
     st.rerun()
 
