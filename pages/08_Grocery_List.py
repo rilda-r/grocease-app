@@ -120,10 +120,18 @@ if hasattr(st, "dialog"):
             f"- **Adding:** +{dup_info['add_qty']}\n"
             f"- **New Total:** ×{dup_info['existing_qty'] + dup_info['add_qty']}"
         )
-        c_yes, c_no = st.columns(2)
+        c_yes, c_sep, c_no = st.columns(3)
         with c_yes:
-            if st.button("➕ Yes, Add Quantity", type="primary", use_container_width=True):
+            if st.button("➕ Add to Quantity", type="primary", use_container_width=True):
                 apply_add_quantity(dup_info["existing_id"], dup_info["add_qty"], dup_info["existing_name"])
+                st.session_state["duplicate_confirm"] = None
+                st.rerun()
+        with c_sep:
+            if st.button("➕ Separate Row", use_container_width=True):
+                try:
+                    add_live_grocery_item(room_id, user_id, dup_info["existing_name"], dup_info["add_qty"])
+                except Exception:
+                    pass
                 st.session_state["duplicate_confirm"] = None
                 st.rerun()
         with c_no:
@@ -147,10 +155,18 @@ if st.session_state.get("duplicate_confirm"):
             """,
             unsafe_allow_html=True,
         )
-        col_dup_y, col_dup_n = st.columns(2)
+        col_dup_y, col_dup_sep, col_dup_n = st.columns(3)
         with col_dup_y:
-            if st.button(f"➕ Yes, Add +{dup['add_qty']} to '{dup['existing_name']}'", type="primary", key="dup_inpage_yes"):
+            if st.button(f"➕ Add to Quantity", type="primary", key="dup_inpage_yes"):
                 apply_add_quantity(dup["existing_id"], dup["add_qty"], dup["existing_name"])
+                st.session_state["duplicate_confirm"] = None
+                st.rerun()
+        with col_dup_sep:
+            if st.button("➕ Add as Separate Row", key="dup_inpage_sep"):
+                try:
+                    add_live_grocery_item(room_id, user_id, dup["existing_name"], dup["add_qty"])
+                except Exception:
+                    pass
                 st.session_state["duplicate_confirm"] = None
                 st.rerun()
         with col_dup_n:
@@ -175,16 +191,26 @@ status_filter = st.radio(
 new_item = render_add_grocery_form(room_id, key_prefix="gl_")
 if new_item:
     item_name_clean = new_item["itemName"].strip()
-    # Check for duplicate item in active list (case-insensitive)
+    # Check for duplicate item in active list (case-insensitive) ONLY for current user's own items!
+    # If another user added the same item, keep them completely separate (1 row per user).
+    def _is_my_item(i):
+        u = i.get("userId") if i.get("userId") is not None else i.get("user_id")
+        return u is not None and int(u) == int(user_id)
+
     existing_dup = next(
-        (i for i in all_items if i["itemName"].strip().lower() == item_name_clean.lower()),
+        (
+            i for i in all_items
+            if _is_my_item(i)
+            and i.get("status") == "pending"
+            and (i.get("itemName") or i.get("item_name", "")).strip().lower() == item_name_clean.lower()
+        ),
         None,
     )
     if existing_dup:
         st.session_state["duplicate_confirm"] = {
             "existing_id": existing_dup["id"],
-            "existing_name": existing_dup["itemName"],
-            "existing_qty": existing_dup["quantity"],
+            "existing_name": existing_dup.get("itemName") or existing_dup.get("item_name", item_name_clean),
+            "existing_qty": existing_dup.get("quantity", 1),
             "add_qty": new_item["quantity"],
         }
         st.rerun()
