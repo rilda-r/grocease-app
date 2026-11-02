@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.View;
+import android.webkit.CookieManager;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -105,6 +106,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupWebView() {
+        // Enable cookies and third-party cookies (critical for Streamlit Cloud sessions)
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            cookieManager.setAcceptThirdPartyCookies(webView, true);
+        }
+
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -118,8 +126,12 @@ public class MainActivity extends AppCompatActivity {
         settings.setDisplayZoomControls(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
 
-        // Customize User Agent to let Streamlit know it's Android App
-        String customUA = settings.getUserAgentString() + " GrocEaseApp/1.0";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        }
+
+        // Custom User Agent identifying GrocEase standalone app
+        String customUA = settings.getUserAgentString() + " GrocEaseApp/1.0.1 Standalone";
         settings.setUserAgentString(customUA);
 
         webView.setWebViewClient(new WebViewClient() {
@@ -135,6 +147,20 @@ public class MainActivity extends AppCompatActivity {
                 super.onPageFinished(view, url);
                 progressBar.setVisibility(View.GONE);
                 swipeRefresh.setRefreshing(false);
+
+                // Inject CSS to eliminate any web-like Streamlit chrome (header, deploy button, footer)
+                view.evaluateJavascript(
+                        "(function() {" +
+                        "  var style = document.getElementById('grocease-native-style');" +
+                        "  if (!style) {" +
+                        "    style = document.createElement('style');" +
+                        "    style.id = 'grocease-native-style';" +
+                        "    style.innerHTML = '#MainMenu, footer, .stDeployButton, [data-testid=\"stToolbarActions\"], header[data-testid=\"stHeader\"], [data-testid=\"stDecoration\"] { display: none !important; } .block-container { padding-top: 1rem !important; }';" +
+                        "    document.head.appendChild(style);" +
+                        "  }" +
+                        "})();",
+                        null
+                );
             }
 
             @Override
@@ -148,14 +174,30 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                Uri uri = request.getUrl();
-                String host = uri.getHost();
-                if (host != null && (host.contains("streamlit.app") || host.contains("supabase.co"))) {
+                return handleUrl(view, request.getUrl());
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return handleUrl(view, Uri.parse(url));
+            }
+
+            private boolean handleUrl(WebView view, Uri uri) {
+                if (uri == null) return false;
+                String scheme = uri.getScheme();
+                if (scheme == null) return false;
+
+                // Keep ALL HTTP and HTTPS navigation strictly inside our native WebView!
+                // This ensures external browser (Chrome, Edge, etc.) NEVER opens and no URL bar is ever shown.
+                if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
                     return false;
                 }
-                // Open external links (e.g. documentation, help) in external browser
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                startActivity(intent);
+
+                // Handle system schemes (e.g. tel:, mailto:, sms:)
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                    startActivity(intent);
+                } catch (Exception ignored) {}
                 return true;
             }
         });
@@ -249,4 +291,3 @@ public class MainActivity extends AppCompatActivity {
         webView.saveState(outState);
     }
 }
-

@@ -88,8 +88,9 @@ p, span, label, div {{
     color: {DEEP_CHOCOLATE};
 }}
 
-#MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"] {{
+#MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"], [data-testid="stDecoration"] {{
     visibility: hidden !important;
+    display: none !important;
 }}
 header {{
     background: transparent !important;
