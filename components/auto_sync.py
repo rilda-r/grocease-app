@@ -10,7 +10,7 @@ all other roommates' screens automatically update in real time.
 import streamlit as st
 
 
-def setup_auto_sync(interval_ms: int = 3500, key: str = "room_auto_sync", pause: bool = False):
+def setup_auto_sync(interval_ms: int = 25000, key: str = "room_auto_sync", pause: bool = False):
     """
     Trigger automatic background synchronization.
     If pause=True (e.g. while editing an item or filling an input),

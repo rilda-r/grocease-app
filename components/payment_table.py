@@ -19,6 +19,7 @@ def render_payment_table(
     on_remind=None,
     on_report=None,
     key_prefix: str = "",
+    **kwargs,
 ):
     """
     Render payment records in a clean, single-line horizontal card layout.
@@ -45,19 +46,38 @@ def render_payment_table(
     )
 
     for p in payments:
-        p_id = p["id"]
+        if not isinstance(p, dict):
+            continue
+        p_id = p.get("id")
         payer_id = p.get("payerUserId") if p.get("payerUserId") is not None else p.get("payer_user_id")
         payee_id = p.get("payeeUserId") if p.get("payeeUserId") is not None else p.get("payee_user_id")
 
-        payer_disp = p.get("payerName") or get_username(payer_id)
-        payee_disp = p.get("payeeName") or get_username(payee_id)
-        amount_val = float(p.get("amount", 0.0))
-        status = p.get("paymentStatus") or p.get("payment_status", "pending")
-        created_val = p.get("createdAt") or p.get("created_at", "")
+        payer_disp = p.get("payerName") or (get_username(payer_id) if payer_id is not None else "Member")
+        payee_disp = p.get("payeeName") or (get_username(payee_id) if payee_id is not None else "Member")
 
-        is_payer = payer_id is not None and int(payer_id) == int(current_user_id)
-        is_payee = payee_id is not None and int(payee_id) == int(current_user_id)
+        try:
+            amount_val = float(p.get("amount") or 0.0)
+        except (ValueError, TypeError):
+            amount_val = 0.0
 
+        status = str(p.get("paymentStatus") or p.get("payment_status") or "pending").lower()
+        created_val = str(p.get("createdAt") or p.get("created_at") or "")
+
+        is_payer = False
+        if payer_id is not None and current_user_id is not None:
+            try:
+                is_payer = int(payer_id) == int(current_user_id)
+            except (ValueError, TypeError):
+                is_payer = str(payer_id) == str(current_user_id)
+
+        is_payee = False
+        if payee_id is not None and current_user_id is not None:
+            try:
+                is_payee = int(payee_id) == int(current_user_id)
+            except (ValueError, TypeError):
+                is_payee = str(payee_id) == str(current_user_id)
+
+        st.markdown('<div class="groc-card-row">', unsafe_allow_html=True)
         with st.container(border=True):
             col_info, col_amt, col_action = st.columns([3.2, 1.4, 1.4], vertical_alignment="center")
             with col_info:
@@ -102,3 +122,4 @@ def render_payment_table(
                     st.markdown("<div style='text-align:right; font-size:0.82rem; color:#6B8F71; font-weight:700;'>✅ Settled</div>", unsafe_allow_html=True)
                 else:
                     st.markdown(f"<div style='text-align:right; font-size:0.82rem; color:#6B8F71; font-weight:600;'>{status.capitalize()}</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)

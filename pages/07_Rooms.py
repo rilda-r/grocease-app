@@ -17,7 +17,6 @@ from style import apply_base_style
 from utils.session import require_auth, get_current_user_id, set_current_room, clear_current_room
 from utils.formatting import format_datetime, badge_html
 from components.sidebar import render_sidebar
-from components.help_guide import render_help_button
 from components.cards import render_empty_state
 from components.alerts import confirmation_dialog
 from database.database import (
@@ -52,24 +51,12 @@ render_sidebar()
 user_id = get_current_user_id()
 
 st.markdown('<div class="groc-page-header">', unsafe_allow_html=True)
-col_rooms_title, col_rooms_help, col_rooms_ref = st.columns([3.8, 0.6, 1.1], vertical_alignment="center")
+col_rooms_title, col_rooms_ref = st.columns([4.2, 1.2], vertical_alignment="center")
 with col_rooms_title:
     st.markdown("# 🏠 Rooms")
     st.markdown("<p style='color:#4A6568; margin-top:-0.8rem;'>Create and manage shared spaces for your grocery groups.</p>", unsafe_allow_html=True)
-with col_rooms_help:
-    render_help_button(
-        page_title="Rooms",
-        tip="Rooms are shared spaces for roommates, family, or travel buddies to pool groceries and bills.",
-        items=[
-            ("➕ Create Room", "Create a new group space and get a unique 6-character code to share."),
-            ("🔗 Join Room", "Enter a 6-character code provided by a roommate to join their space."),
-            ("📋 Open List", "Sets the chosen room as active and opens its grocery list."),
-            ("🔄 Sync", "Pulls recent room creations, joined status, and member lists."),
-        ],
-        key="rooms",
-    )
 with col_rooms_ref:
-    if st.button("🔄 Sync", key="rooms_top_sync_btn", help="Sync latest rooms", use_container_width=True):
+    if st.button("🔄 Refresh", key="rooms_top_refresh_btn", help="Refresh latest rooms", use_container_width=True):
         st.toast("Rooms refreshed! ✨", icon="🔄")
         st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)

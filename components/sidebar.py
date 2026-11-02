@@ -48,8 +48,17 @@ _SIDEBAR_CSS = """
     background-color: #0E3B3A !important;
     background-image: linear-gradient(180deg, #0E3B3A 0%, #0A2B2B 100%) !important;
     border-right: 1.5px solid rgba(227, 214, 190, 0.2) !important;
-    min-width: 250px !important;
+    width: 280px !important;
+    min-width: 260px !important;
+    max-width: 320px !important;
     box-shadow: 4px 0 24px rgba(10, 43, 43, 0.25) !important;
+}
+@media (max-width: 768px) {
+    [data-testid="stSidebar"] {
+        width: 82vw !important;
+        max-width: 320px !important;
+        min-width: 260px !important;
+    }
 }
 [data-testid="stSidebar"] * {
     color: #EEF5F3 !important;
@@ -151,11 +160,31 @@ _SIDEBAR_CSS = """
     transition: all 0.2s ease !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover {
-    background-color: #0F766E !important;
-    border-color: #0F766E !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: #2DD4BF !important;
     color: #FFFFFF !important;
-    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3) !important;
     transform: translateY(-1px);
+}
+
+/* Distinctive branded background for Refresh button in sidebar actions */
+.sb-refresh-wrapper .stButton > button {
+    background-color: #0F766E !important;
+    background-image: linear-gradient(135deg, #0F766E 0%, #115E59 100%) !important;
+    border: 1.5px solid #2DD4BF !important;
+    border-radius: 12px !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    font-size: 0.92rem !important;
+    padding: 0.55rem 0.95rem !important;
+    margin-top: 0.35rem !important;
+    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35) !important;
+}
+.sb-refresh-wrapper .stButton > button:hover {
+    background-color: #0D655E !important;
+    border-color: #5EEAD4 !important;
+    color: #FFFFFF !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(45, 212, 191, 0.45) !important;
 }
 </style>
 """
@@ -207,7 +236,7 @@ def render_room_selector(key_prefix: str = "global", show_refresh: bool = True):
                 key=f"{key_prefix}_room_dropdown",
             )
         with col_ref:
-            if st.button("🔄 Sync", key=f"{key_prefix}_top_sync_btn", help="Sync latest room data", use_container_width=True):
+            if st.button("🔄 Refresh", key=f"{key_prefix}_top_refresh_btn", help="Refresh latest room data", use_container_width=True):
                 st.toast("Data refreshed! ✨", icon="🔄")
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -261,30 +290,11 @@ def render_sidebar():
 
         # ── Minimalist Actions ────────────────────────
         st.markdown('<div class="sb-section-label">Actions</div>', unsafe_allow_html=True)
-        with st.popover("❓  Navigation Help", use_container_width=True):
-            st.markdown(
-                """
-                <div style="font-size:0.85rem; color:#10272A; line-height:1.45;">
-                    <div style="font-family:'Fraunces',Georgia,serif; font-size:1.05rem; font-weight:700; color:#0F766E; margin-bottom:0.4rem;">
-                        🧭 GrocEase Guide
-                    </div>
-                    <div style="margin-bottom:0.35rem;">• <strong>📊 Dashboard:</strong> Overview of pending groceries, room budgets, and net debts.</div>
-                    <div style="margin-bottom:0.35rem;">• <strong>🏠 Rooms:</strong> Create or join shared grocery groups using a 6-character code.</div>
-                    <div style="margin-bottom:0.35rem;">• <strong>🛒 Grocery List:</strong> Add items, set priorities, and see live edits from roommates.</div>
-                    <div style="margin-bottom:0.35rem;">• <strong>🧺 Shopping Mode:</strong> Tick off items live in the store aisle as you buy them.</div>
-                    <div style="margin-bottom:0.35rem;">• <strong>📷 Bill Scanning:</strong> Scan receipt photo/PDF with AI, match items, and split debts.</div>
-                    <div style="margin-bottom:0.35rem;">• <strong>💳 Payments:</strong> Settle debts with two-way confirmation and reminder nudges.</div>
-                    <div style="margin-bottom:0.35rem;">• <strong>🎯 Budget:</strong> Set monthly category limits and track household spending bars.</div>
-                    <div style="margin-bottom:0.35rem;">• <strong>📝 Personal Expenses:</strong> Log private individual purchases not shared with roommates.</div>
-                    <div style="margin-bottom:0.35rem;">• <strong>👤 Profile:</strong> Update legal name, display nickname, and payment details.</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        if st.button("🔄  Sync & Refresh", key="sb_sync_btn", use_container_width=True, help="Fetch latest updates"):
-            st.toast("Data synchronized! ✨", icon="🔄")
+        st.markdown('<div class="sb-refresh-wrapper">', unsafe_allow_html=True)
+        if st.button("🔄  Refresh", key="sb_sync_btn", use_container_width=True, help="Fetch latest updates"):
+            st.toast("Data refreshed! ✨", icon="🔄")
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
         if st.button("🚪  Logout", key="sidebar_logout_btn", use_container_width=True):
             st.switch_page("pages/05_Logout.py")

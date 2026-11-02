@@ -51,6 +51,7 @@ def render_grocery_table(
         is_owner = user_uid is not None and int(user_uid) == int(current_user_id)
         is_purchased = status == "purchased"
 
+        st.markdown('<div class="groc-card-row">', unsafe_allow_html=True)
         with st.container(border=True):
             if is_owner and not is_purchased:
                 col_info, col_edit, col_del = st.columns([4.4, 0.7, 0.7], vertical_alignment="center")
@@ -91,3 +92,4 @@ def render_grocery_table(
                         st.markdown("<div style='text-align:right; font-size:0.8rem; color:#4A6568; white-space:nowrap;'>🔒 Done</div>", unsafe_allow_html=True)
                     else:
                         st.write("")
+        st.markdown('</div>', unsafe_allow_html=True)

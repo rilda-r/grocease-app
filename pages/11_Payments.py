@@ -18,7 +18,6 @@ from utils.session import require_auth, get_current_user_id, get_current_room_id
 from utils.formatting import format_currency, format_datetime, badge_html, safe_error_message
 from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar, render_room_selector
-from components.help_guide import render_help_button
 from components.cards import render_metric_card, render_empty_state
 from components.payment_table import render_payment_table
 from components.notifications import render_notification_banner
@@ -100,23 +99,9 @@ require_auth()
 render_sidebar()
 
 # ── Select Room Component at top ──────────────────────────────────────────────
-col_title, col_help, col_sel = st.columns([1.5, 0.35, 1.15], gap="small", vertical_alignment="center")
+col_title, col_sel = st.columns([1.6, 1.1], gap="medium", vertical_alignment="center")
 with col_title:
     st.markdown("# 💳 Payments")
-with col_help:
-    render_help_button(
-        page_title="Payments & Debts",
-        tip="Track household balances and settle debts with two-way confirmation.",
-        items=[
-            ("💸 Settle", "Payer records money transferred; sets status to Awaiting Confirm and notifies payee."),
-            ("✅ Confirm", "Payee verifies money received in their UPI/bank; officially marks debt Settled."),
-            ("🔔 Remind", "Payee sends a gentle in-app reminder alert to the payer."),
-            ("You Owe Tab", "Shows debts where you are the payer and need to settle up."),
-            ("Owed to You Tab", "Shows debts where roommates owe you money."),
-            ("Room Balance & History", "Shows net room balances and completed audit trail."),
-        ],
-        key="payments",
-    )
 with col_sel:
     st.write("")
     render_room_selector(key_prefix="payments_page")
@@ -133,7 +118,7 @@ if not room_id:
     st.stop()
 
 # ── Real-time Auto-Sync ────────────────────────────────────────────────────────
-setup_auto_sync(interval_ms=4000, key="pay_auto_sync")
+setup_auto_sync(interval_ms=20000, key="pay_auto_sync")
 
 st.markdown(
     f"""
@@ -220,15 +205,30 @@ if split_bill_id:
 all_room_payments = get_payments(room_id)
 
 def _is_payer(p, uid):
+    if not isinstance(p, dict) or uid is None:
+        return False
     payer = p.get("payerUserId") if p.get("payerUserId") is not None else p.get("payer_user_id")
-    return payer is not None and int(payer) == int(uid)
+    if payer is None:
+        return False
+    try:
+        return int(payer) == int(uid)
+    except (ValueError, TypeError):
+        return str(payer) == str(uid)
 
 def _is_payee(p, uid):
+    if not isinstance(p, dict) or uid is None:
+        return False
     payee = p.get("payeeUserId") if p.get("payeeUserId") is not None else p.get("payee_user_id")
-    return payee is not None and int(payee) == int(uid)
+    if payee is None:
+        return False
+    try:
+        return int(payee) == int(uid)
+    except (ValueError, TypeError):
+        return str(payee) == str(uid)
 
 def _is_pending(p):
-    return (p.get("paymentStatus") or p.get("payment_status")) == "pending"
+    st_val = str(p.get("paymentStatus") or p.get("payment_status") or "pending").lower()
+    return st_val in ("pending", "paid", "awaiting_confirmation")
 
 # STRICT ROOM PRIVACY:
 # A user must ONLY see debts and payments where they are the payer OR payee.
@@ -239,12 +239,12 @@ payments = [
 ]
 
 amount_owe = sum(
-    float(p.get("amount", 0.0)) for p in payments
-    if _is_payer(p, user_id) and _is_pending(p)
+    float(p.get("amount") or 0.0) for p in payments
+    if _is_payer(p, user_id) and (str(p.get("paymentStatus") or p.get("payment_status") or "pending").lower() == "pending")
 )
 amount_owed_to_me = sum(
-    float(p.get("amount", 0.0)) for p in payments
-    if _is_payee(p, user_id) and _is_pending(p)
+    float(p.get("amount") or 0.0) for p in payments
+    if _is_payee(p, user_id) and (str(p.get("paymentStatus") or p.get("payment_status") or "pending").lower() == "pending")
 )
 
 m1, m2 = st.columns(2)

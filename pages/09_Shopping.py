@@ -17,7 +17,6 @@ from utils.session import require_auth, get_current_user_id, get_current_room_id
 from utils.formatting import badge_html, safe_error_message
 from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar, render_room_selector
-from components.help_guide import render_help_button
 from components.cards import render_empty_state
 from database.database import (
     get_live_grocery_items,
@@ -43,22 +42,9 @@ apply_base_style()
 require_auth()
 render_sidebar()
 
-col_title, col_help, col_sel = st.columns([1.5, 0.35, 1.15], gap="small", vertical_alignment="center")
+col_title, col_sel = st.columns([1.6, 1.1], gap="medium", vertical_alignment="center")
 with col_title:
     st.markdown("# 🧺 Shopping Mode")
-with col_help:
-    render_help_button(
-        page_title="Shopping Mode",
-        tip="Designed for in-store shopping. Check items into your cart as you walk down supermarket aisles.",
-        items=[
-            ("🛒 +1", "Records 1 unit of this item as bought and moves it to Fully Purchased."),
-            ("❌", "Marks an item as unavailable or out of stock at the store."),
-            ("↩ -1", "Reverses one bought unit back to pending if tapped accidentally."),
-            ("🔄 Reset", "Moves a purchased or unavailable item back into the pending list."),
-            ("🏁 Finish Shopping", "Wraps up your run, presents item counts, and lets you scan the store receipt."),
-        ],
-        key="shopping",
-    )
 with col_sel:
     st.write("")
     render_room_selector(key_prefix="shopping_page")
@@ -74,7 +60,7 @@ if not room_id:
     st.stop()
 
 # ── Real-time Auto-Sync across all roommates ─────────────────────────────────
-setup_auto_sync(interval_ms=3000, key="shop_auto_sync")
+setup_auto_sync(interval_ms=15000, key="shop_auto_sync")
 
 # ── Shopping Room Frame ────────────────────────────────────────────────────────
 st.markdown(
@@ -163,6 +149,7 @@ else:
         purchased_qty = item.get("purchasedQuantity", 0) or 0
         remaining_qty = max(0, total_qty - purchased_qty)
 
+        st.markdown('<div class="groc-card-row">', unsafe_allow_html=True)
         with st.container(border=True):
             col_info, col_na, col_buy = st.columns([4.2, 0.8, 1.1], vertical_alignment="center")
             with col_info:
@@ -187,6 +174,7 @@ else:
             with col_buy:
                 if st.button("🛒+1", key=f"buy_{item_id}", type="primary", help="Mark 1 Bought", use_container_width=True):
                     do_mark_purchased(item_id, inc=1)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -200,6 +188,7 @@ if purchased_items:
         total_qty = item.get("quantity", 1)
         purchased_count = item.get("purchasedQuantity", total_qty) or total_qty
 
+        st.markdown('<div class="groc-card-row">', unsafe_allow_html=True)
         with st.container(border=True):
             col_info, col_undo, col_reset = st.columns([4.4, 0.9, 0.9], vertical_alignment="center")
             with col_info:
@@ -224,6 +213,7 @@ if purchased_items:
             with col_reset:
                 if st.button("🔄", key=f"reset_buy_{item_id}", help="Reset to pending", use_container_width=True):
                     do_reset_item(item_id)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ── Unavailable items (Single-Line Compact Row) ───────────────────────────────
 if unavailable_items:
@@ -233,6 +223,7 @@ if unavailable_items:
         item_name = item.get("itemName") or item.get("item_name", "Item")
         added_by = item.get("addedByName") or item.get("added_by_name") or "Member"
 
+        st.markdown('<div class="groc-card-row">', unsafe_allow_html=True)
         with st.container(border=True):
             col_info, col_reset = st.columns([4.8, 1.2], vertical_alignment="center")
             with col_info:
@@ -253,6 +244,7 @@ if unavailable_items:
             with col_reset:
                 if st.button("🔄 Reset", key=f"reset_na_{item_id}", help="Move back to pending", use_container_width=True):
                     do_reset_item(item_id)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("---")

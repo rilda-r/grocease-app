@@ -27,7 +27,6 @@ from utils.session import (
 )
 from utils.formatting import format_currency, badge_html, safe_error_message
 from components.sidebar import render_sidebar, render_room_selector
-from components.help_guide import render_help_button
 from components.cards import render_empty_state
 from database.database import (
     get_user_joined_rooms,
@@ -57,7 +56,7 @@ require_auth()
 render_sidebar()
 
 # ── Step 1: Mandatory Room Selection Header ───────────────────────────────────
-col_title, col_help, col_sel = st.columns([1.5, 0.35, 1.15], gap="small", vertical_alignment="center")
+col_title, col_sel = st.columns([1.6, 1.1], gap="medium", vertical_alignment="center")
 with col_title:
     st.markdown("# 📷 Receipt Scanning & Split")
     st.markdown(
@@ -65,19 +64,6 @@ with col_title:
         "Scan receipts, review extracted lines, assign member claims, and split shared costs."
         "</p>",
         unsafe_allow_html=True,
-    )
-with col_help:
-    render_help_button(
-        page_title="Receipt Scanning",
-        tip="Scan store receipts or invoices to automatically split shared items among roommates.",
-        items=[
-            ("📤 Browse Files", "Upload a photo (JPG, PNG) or PDF of your store receipt."),
-            ("✏️ Review Items", "Verify extracted store name, date, items, quantities, and prices."),
-            ("👥 Attribution", "Choose who requested each item or select shared split across everyone."),
-            ("✅ Confirm & Split", "Saves the transaction and records debts in Payments for everyone."),
-            ("💳 View Debts", "Opens Payments to view and settle the created debts immediately."),
-        ],
-        key="bill_scan",
     )
 with col_sel:
     st.write("")

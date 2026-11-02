@@ -19,16 +19,24 @@ from utils.session import require_auth, get_current_user_id, get_username
 from utils.formatting import format_currency
 from components.auto_sync import setup_auto_sync
 from components.sidebar import render_sidebar
-from components.help_guide import render_help_button
 from components.notifications import render_notification_banner
 from components.cards import render_metric_card, render_metric_cards_grid, render_info_card, render_empty_state
 from components.charts import render_category_pie_chart, render_budget_utilization_chart
 try:
-    from database.database import get_user_joined_rooms, get_live_grocery_items
+    from database.database import (
+        get_user_joined_rooms,
+        get_live_grocery_items,
+        get_user_all_rooms_grocery_items,
+        get_user_all_payments_live,
+    )
 except Exception:
     def get_user_joined_rooms(user_id):
         return []
     def get_live_grocery_items(room_id):
+        return []
+    def get_user_all_rooms_grocery_items(user_id):
+        return []
+    def get_user_all_payments_live(user_id):
         return []
 from services.personal_expense_service import get_personal_expenses as svc_get_personal_expenses
 from services.budget_service import get_budgets as svc_get_budgets
@@ -53,91 +61,86 @@ render_dev_mode_banner()
 
 # ── Page title & Top Refresh ──────────────────────────────────────────────────
 st.markdown('<div class="groc-page-header">', unsafe_allow_html=True)
-col_dash_title, col_dash_help, col_dash_ref = st.columns([3.8, 0.6, 1.1], vertical_alignment="center")
+col_dash_title, col_dash_ref = st.columns([4.2, 1.2], vertical_alignment="center")
 with col_dash_title:
     st.markdown("# 📊 Dashboard")
     st.markdown(f"<p style='color:#4A6568; margin-top:-0.8rem;'>Welcome back, <strong>{username}</strong>!</p>", unsafe_allow_html=True)
-with col_dash_help:
-    render_help_button(
-        page_title="Dashboard",
-        tip="Your household command center: monitor pending groceries, room budgets, and debts at a glance.",
-        items=[
-            ("🔄 Sync", "Refreshes live spending metrics, debts, and grocery counters immediately."),
-            ("📊 Metric Cards", "Tap on pending groceries or debts to jump straight to their respective pages."),
-            ("📋 Quick Action Cards", "Instant shortcuts to create rooms, manage grocery lists, or scan receipts."),
-            ("☰ Sidebar Menu", "Tap the top-left menu icon to navigate between all pages of the app."),
-        ],
-        key="dash",
-    )
 with col_dash_ref:
-    if st.button("🔄 Sync", key="dash_top_sync_btn", help="Sync latest dashboard metrics", use_container_width=True):
+    if st.button("🔄 Refresh", key="dash_top_refresh_btn", help="Refresh latest dashboard metrics", use_container_width=True):
         st.toast("Dashboard refreshed! ✨", icon="🔄")
         st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("<hr style='border-color:#CADDD8; margin:0.5rem 0 1.5rem 0;'>", unsafe_allow_html=True)
 
 # ── Real-time Auto-Sync ────────────────────────────────────────────────────────
-setup_auto_sync(interval_ms=5000, key="dash_auto_sync")
+setup_auto_sync(interval_ms=30000, key="dash_auto_sync")
 
 # ── Notifications (e.g. payment reminders) ────────────────────────────────────
 render_notification_banner(user_id, key_prefix="dashboard")
 
 
-# ── Pull database data ────────────────────────────────────────────────────────
-db_rooms = get_user_joined_rooms(user_id) or []
-my_rooms = [
-    {
-        "id": r["id"],
-        "name": r["name"],
-        "role": r.get("role", "member"),
-        "code": r.get("secret_code") or r.get("code", ""),
-    }
-    for r in db_rooms
-]
+# ── Pull database data efficiently ────────────────────────────────────────────
+try:
+    db_rooms = get_user_joined_rooms(user_id) or []
+    my_rooms = [
+        {
+            "id": r["id"],
+            "name": r["name"],
+            "role": r.get("role", "member"),
+            "code": r.get("secret_code") or r.get("code", ""),
+        }
+        for r in db_rooms
+    ]
 
-all_items = []
-for room in my_rooms:
-    all_items.extend(get_live_grocery_items(room["id"]) or [])
+    # Single batch fetch for grocery items across all user's rooms
+    all_items = get_user_all_rooms_grocery_items(user_id) or []
+    pending_items = [i for i in all_items if i.get("status") == "pending"]
 
-pending_items = [i for i in all_items if i.get("status") == "pending"]
+    # Single batch fetch for payments across all rooms involving the user
+    all_payments = get_user_all_payments_live(user_id) or []
 
-# Payments
-all_payments = []
-for room in my_rooms:
-    res_p = svc_get_room_payments(user_id, room["id"])
-    if res_p and res_p.get("success"):
-        all_payments.extend(res_p.get("data", []))
+    amount_owe = sum(
+        float(p.get("amount") or 0.0) for p in all_payments
+        if (str(p.get("payerUserId") or p.get("payer_user_id")) == str(user_id))
+        and (str(p.get("paymentStatus") or p.get("payment_status") or "pending").lower() == "pending")
+    )
+    amount_owed_to_me = sum(
+        float(p.get("amount") or 0.0) for p in all_payments
+        if (str(p.get("payeeUserId") or p.get("payee_user_id")) == str(user_id))
+        and (str(p.get("paymentStatus") or p.get("payment_status") or "pending").lower() == "pending")
+    )
 
-amount_owe = sum(
-    float(p.get("amount", 0)) for p in all_payments
-    if (p.get("payer_user_id") == user_id or p.get("payerUserId") == user_id) and (p.get("payment_status") == "pending" or p.get("paymentStatus") == "pending")
-)
-amount_owed_to_me = sum(
-    float(p.get("amount", 0)) for p in all_payments
-    if (p.get("payee_user_id") == user_id or p.get("payeeUserId") == user_id) and (p.get("payment_status") == "pending" or p.get("paymentStatus") == "pending")
-)
+    exp_res = svc_get_personal_expenses(user_id)
+    expenses = [
+        {
+            "id": e["id"],
+            "amount": float(e.get("amount") or 0.0),
+            "category": e.get("category", "Other"),
+            "expenseDate": str(e.get("expense_date") or ""),
+        }
+        for e in (exp_res.get("data", []) if exp_res and exp_res.get("success") else [])
+    ]
+    total_spent = sum(e["amount"] for e in expenses)
 
-exp_res = svc_get_personal_expenses(user_id)
-expenses = [
-    {
-        "id": e["id"],
-        "amount": float(e["amount"]),
-        "category": e["category"],
-        "expenseDate": str(e.get("expense_date") or ""),
-    }
-    for e in (exp_res.get("data", []) if exp_res and exp_res.get("success") else [])
-]
-total_spent = sum(e["amount"] for e in expenses)
-
-bg_res = svc_get_budgets(user_id)
-budgets = [
-    {
-        "id": b["id"],
-        "category": b["category"],
-        "monthlyLimit": float(b.get("monthly_limit", 0)),
-    }
-    for b in (bg_res.get("data", []) if bg_res and bg_res.get("success") else [])
-]
+    bg_res = svc_get_budgets(user_id)
+    budgets = [
+        {
+            "id": b["id"],
+            "category": b.get("category", "General"),
+            "monthlyLimit": float(b.get("monthly_limit") or 0.0),
+        }
+        for b in (bg_res.get("data", []) if bg_res and bg_res.get("success") else [])
+    ]
+except Exception as e:
+    my_rooms = []
+    all_items = []
+    pending_items = []
+    all_payments = []
+    amount_owe = 0.0
+    amount_owed_to_me = 0.0
+    expenses = []
+    total_spent = 0.0
+    budgets = []
 
 spending_by_cat = defaultdict(float)
 for e in expenses:

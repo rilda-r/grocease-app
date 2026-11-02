@@ -420,6 +420,47 @@ def get_live_grocery_items(room_id: int) -> list:
         return []
 
 
+def get_user_all_rooms_grocery_items(user_id: int) -> list:
+    """Fetch all grocery items for all rooms the user has joined in a single fast query."""
+    if not user_id:
+        return []
+    try:
+        rows = query_all(
+            """
+            SELECT g.id, g.room_id, g.user_id, g.item_name, g.quantity,
+                   COALESCE(g.purchased_quantity, 0) AS purchased_quantity,
+                   g.status, g.created_at, g.updated_at,
+                   COALESCE(NULLIF(p.nickname, ''), NULLIF(u.nickname, ''), NULLIF(u.username, ''), NULLIF(u.full_name, ''), 'Member') AS added_by_name,
+                   u.email AS user_email
+            FROM grocery_items g
+            JOIN room_members rm ON rm.room_id = g.room_id
+            LEFT JOIN users u ON u.id = g.user_id
+            LEFT JOIN profiles p ON p.user_id = u.id
+            WHERE rm.user_id = %s
+            ORDER BY g.created_at ASC, g.id ASC
+            """,
+            (int(user_id),),
+        )
+        return [
+            {
+                "id": r["id"],
+                "roomId": r["room_id"],
+                "userId": r["user_id"],
+                "itemName": r["item_name"],
+                "quantity": r["quantity"],
+                "purchasedQuantity": r.get("purchased_quantity", 0) or 0,
+                "status": r["status"],
+                "createdAt": str(r.get("created_at") or ""),
+                "updatedAt": str(r.get("updated_at") or ""),
+                "addedByName": r.get("added_by_name", "Member"),
+                "userEmail": r.get("user_email", ""),
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+
+
 def add_live_grocery_item(room_id: int, user_id: int, item_name: str, quantity: int) -> dict:
     """Insert a new grocery item into Supabase PostgreSQL."""
     now = datetime.utcnow()
@@ -634,6 +675,49 @@ def get_room_payments_live(room_id: int) -> list:
             ORDER BY p.created_at DESC, p.id DESC
             """,
             (int(room_id),),
+        )
+        return [
+            {
+                "id": r["id"],
+                "roomId": r["room_id"],
+                "billId": r.get("bill_id"),
+                "receiptId": r.get("receipt_id"),
+                "payerUserId": r["payer_user_id"],
+                "payeeUserId": r["payee_user_id"],
+                "payerName": r["payer_name"],
+                "payeeName": r["payee_name"],
+                "amount": float(r["amount"]),
+                "paymentStatus": r["payment_status"],
+                "createdAt": str(r.get("created_at") or ""),
+                "settledAt": str(r.get("settled_at") or ""),
+                "reportedAt": str(r.get("reported_at") or ""),
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+
+
+def get_user_all_payments_live(user_id: int) -> list:
+    """Fetch all payments involving the user across any room in a single fast query."""
+    if not user_id:
+        return []
+    try:
+        rows = query_all(
+            """
+            SELECT p.id, p.room_id, p.bill_id, p.receipt_id, p.payer_user_id, p.payee_user_id,
+                   p.amount, p.payment_status, p.created_at, p.settled_at, p.reported_at,
+                   COALESCE(NULLIF(pp.nickname, ''), NULLIF(up.nickname, ''), NULLIF(up.username, ''), NULLIF(up.full_name, ''), 'Member') AS payer_name,
+                   COALESCE(NULLIF(pe.nickname, ''), NULLIF(ue.nickname, ''), NULLIF(ue.username, ''), NULLIF(ue.full_name, ''), 'Member') AS payee_name
+            FROM payments p
+            JOIN users up ON up.id = p.payer_user_id
+            LEFT JOIN profiles pp ON pp.user_id = up.id
+            JOIN users ue ON ue.id = p.payee_user_id
+            LEFT JOIN profiles pe ON pe.user_id = ue.id
+            WHERE p.payer_user_id = %s OR p.payee_user_id = %s
+            ORDER BY p.created_at DESC, p.id DESC
+            """,
+            (int(user_id), int(user_id)),
         )
         return [
             {

@@ -19,7 +19,6 @@ from style import apply_base_style
 from utils.session import require_auth, get_current_user_id, get_username
 from utils.formatting import format_currency
 from components.sidebar import render_sidebar
-from components.help_guide import render_help_button
 from components.cards import render_metric_card, render_empty_state
 from components.expense_table import render_expense_table
 from components.forms import render_add_expense_form
@@ -46,27 +45,15 @@ user_id  = get_current_user_id()
 username = get_username()
 
 st.markdown('<div class="groc-page-header">', unsafe_allow_html=True)
-col_exp_title, col_exp_help, col_exp_ref = st.columns([3.8, 0.6, 1.1], vertical_alignment="center")
+col_exp_title, col_exp_ref = st.columns([4.2, 1.2], vertical_alignment="center")
 with col_exp_title:
     st.markdown("# 📝 Personal Expenses")
     st.markdown(
         f"<p style='color:#4A6568; margin-top:-0.8rem;'>Your private expense log — only visible to you, <strong>{username}</strong>.</p>",
         unsafe_allow_html=True,
     )
-with col_exp_help:
-    render_help_button(
-        page_title="Personal Expenses",
-        tip="Keep a 100% private ledger of non-room expenses, snacks, and individual purchases.",
-        items=[
-            ("➕ Add Expense", "Log a private expense with amount, category, date, and description."),
-            ("🗑️ Delete", "Delete an expense entry from your personal history."),
-            ("🔄 Sync", "Refresh personal expenses and spending totals immediately."),
-            ("📊 Breakdown", "Review category pie chart and monthly spending trajectory."),
-        ],
-        key="expenses",
-    )
 with col_exp_ref:
-    if st.button("🔄 Sync", key="exp_top_sync_btn", help="Sync latest expenses", use_container_width=True):
+    if st.button("🔄 Refresh", key="exp_top_refresh_btn", help="Refresh latest expenses", use_container_width=True):
         st.toast("Expenses refreshed! ✨", icon="🔄")
         st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)

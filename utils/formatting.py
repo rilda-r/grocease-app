@@ -5,9 +5,13 @@ UI formatting helpers for GrocEase.
 """
 
 
-def format_currency(amount: float, symbol: str = "₹") -> str:
-    """Format a float as a currency string."""
-    return f"{symbol}{amount:,.2f}"
+def format_currency(amount, symbol: str = "₹") -> str:
+    """Format a number or string as a currency string safely."""
+    try:
+        val = float(amount or 0.0)
+        return f"{symbol}{val:,.2f}"
+    except (ValueError, TypeError):
+        return f"{symbol}0.00"
 
 
 def format_date(iso_str: str) -> str:
