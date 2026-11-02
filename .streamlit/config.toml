@@ -10,3 +10,6 @@ headless = true
 enableCORS = false
 enableXsrfProtection = false
 enableStaticServing = true
+
+[client]
+showErrorDetails = "full"

@@ -163,3 +163,18 @@ CREATE TABLE IF NOT EXISTS monthly_budget_history (
     CONSTRAINT fk_budget_hist_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_budget_hist_user ON monthly_budget_history (user_id);
+
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    room_id INT NULL,
+    payment_id INT NULL,
+    kind VARCHAR(30) NOT NULL DEFAULT 'general',
+    message VARCHAR(500) NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_notifications_payment FOREIGN KEY (payment_id) REFERENCES payments (id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications (user_id, is_read);

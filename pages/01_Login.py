@@ -2,7 +2,9 @@ import streamlit as st
 import sys, os, time
 from datetime import datetime, timedelta
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
 
 from style import apply_base_style, top_nav, hide_sidebar, render_dev_mode_banner
 from session_manager import check_session_timeout

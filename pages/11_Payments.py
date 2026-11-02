@@ -5,9 +5,11 @@ Payments page — view payment obligations, settle payments, remind payers,
 and view payment history. Also shows expense split preview from bill scanning.
 """
 
-import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sys
+_root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
 
 import streamlit as st
 
@@ -18,11 +20,19 @@ from components.sidebar import render_sidebar, render_room_selector
 from components.cards import render_metric_card, render_empty_state
 from components.payment_table import render_payment_table
 from components.notifications import render_notification_banner
-from database.database import (
-    get_room_payments_live,
-    settle_payment_live,
-    remind_payment_live,
-)
+try:
+    from database.database import (
+        get_room_payments_live,
+        settle_payment_live,
+        remind_payment_live,
+    )
+except Exception:
+    def get_room_payments_live(room_id):
+        return []
+    def settle_payment_live(payment_id):
+        return False
+    def remind_payment_live(payment_id, requester_user_id):
+        return None
 from mock.mock_api import (
     get_payments as mock_get_payments,
     settle_payment as mock_settle_payment,

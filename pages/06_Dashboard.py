@@ -5,9 +5,11 @@ GrocEase Dashboard — overview of rooms, grocery items, payments,
 personal spending, and budget status.
 """
 
-import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sys
+_root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
 
 import streamlit as st
 from collections import defaultdict
@@ -19,7 +21,13 @@ from components.sidebar import render_sidebar
 from components.notifications import render_notification_banner
 from components.cards import render_metric_card, render_metric_cards_grid, render_info_card, render_empty_state
 from components.charts import render_category_pie_chart, render_budget_utilization_chart
-from database.database import get_user_joined_rooms, get_live_grocery_items
+try:
+    from database.database import get_user_joined_rooms, get_live_grocery_items
+except Exception:
+    def get_user_joined_rooms(user_id):
+        return []
+    def get_live_grocery_items(room_id):
+        return []
 from services.personal_expense_service import get_personal_expenses as svc_get_personal_expenses
 from services.budget_service import get_budgets as svc_get_budgets
 from services.payment_service import get_room_payments as svc_get_room_payments
